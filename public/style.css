@@ -1,0 +1,3 @@
+html,body{height:100%;margin:0;background:#5ec0ff;font-family:Arial, sans-serif;}
+#game{width:100%;height:100vh;overflow:hidden;}
+.canvas-center{display:flex;align-items:center;justify-content:center;height:100vh;}
