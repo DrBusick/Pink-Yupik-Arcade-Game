@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Telegram Platformer</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
+</head>
+<body>
+  <div id="game"></div>
+
+  <script>
+    // Telegram WebApp init (if opened inside Telegram)
+    const tg = window.Telegram?.WebApp || null;
+    if (tg) {
+      tg.expand(); // optional
+    }
+
+    // Pass initDataUnsafe user to the game if available
+    const initUser = tg && tg.initDataUnsafe ? tg.initDataUnsafe.user : null;
+    // We'll pass user data into Phaser via a global
+    window.TG_USER = initUser;
+
+  </script>
+
+  <script src="game.js"></script>
+</body>
+</html>
