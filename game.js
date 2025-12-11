@@ -22,7 +22,7 @@ let cursors;
 function preload() {
     this.load.image("ground", "assets/ground.png");
     this.load.image("sky", "assets/sky.png");
-    this.load.spritesheet("mario", "assets/mario.png", {
+    this.load.spritesheet("yupik", "assets/yupik.png", {
         frameWidth: 32,
         frameHeight: 32
     });
@@ -34,7 +34,7 @@ function create() {
     const platforms = this.physics.add.staticGroup();
     platforms.create(400, 430, "ground").setScale(2).refreshBody();
 
-    player = this.physics.add.sprite(100, 300, "mario");
+    player = this.physics.add.sprite(100, 300, "yupik");
     player.setBounce(0.1);
     player.setCollideWorldBounds(true);
 
@@ -45,19 +45,19 @@ function create() {
     // Анімації
     this.anims.create({
         key: 'left',
-        frames: this.anims.generateFrameNumbers('mario', { start: 0, end: 2 }),
+        frames: this.anims.generateFrameNumbers('yupik', { start: 0, end: 2 }),
         frameRate: 10,
         repeat: -1
     });
     this.anims.create({
         key: 'right',
-        frames: this.anims.generateFrameNumbers('mario', { start: 3, end: 5 }),
+        frames: this.anims.generateFrameNumbers('yupik', { start: 3, end: 5 }),
         frameRate: 10,
         repeat: -1
     });
     this.anims.create({
         key: 'idle',
-        frames: [{ key: 'mario', frame: 1 }],
+        frames: [{ key: 'yupik', frame: 1 }],
         frameRate: 10
     });
 }
