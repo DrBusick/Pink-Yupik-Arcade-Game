@@ -168,3 +168,10 @@
   </script>
 </body>
 </html>
+
+const tg = window.Telegram.WebApp;
+tg.expand();
+const initData = tg.initDataUnsafe;
+
+console.log("User:", initData.user);
+console.log("Chat:", initData.chat);
