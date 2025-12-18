@@ -248,6 +248,8 @@ const btnStyle = { fontFamily: 'UnifrakturCook', fontSize: '40px', fill: '#e8d9b
     this.scene.stop('GameScene');
     this.scene.start('MenuScene');
         });
+this.input.addPointer(2);
+this.createTouchControls();
     }
 
 
@@ -301,13 +303,16 @@ const btnStyle = { fontFamily: 'UnifrakturCook', fontSize: '40px', fill: '#e8d9b
 createTouchControls() {
     
 
-    const cam = this.cameras.main;
+   createTouchControls() {
+    const { width, height } = this.scale;
+
     const scaleIdle = 0.9;
     const scaleDown = 0.8;
 
     const makeBtn = (x, y, key) => {
         const btn = this.add.image(x, y, key)
             .setScrollFactor(0)
+            .setDepth(9999)
             .setScale(scaleIdle)
             .setAlpha(0.55)
             .setInteractive();
@@ -330,25 +335,23 @@ createTouchControls() {
         return btn;
     };
 
-    // ◀️ LEFT
-    const left = makeBtn(130, cam.height - 120, 'btn_left');
+    // ◀ LEFT
+    const left = makeBtn(130, height - 120, 'btn_left');
     left.on('pointerdown', () => this.player.touchLeft = true);
     left.on('pointerup',   () => this.player.touchLeft = false);
     left.on('pointerout',  () => this.player.touchLeft = false);
 
-    // ▶️ RIGHT
-    const right = makeBtn(260, cam.height - 120, 'btn_right');
+    // ▶ RIGHT
+    const right = makeBtn(260, height - 120, 'btn_right');
     right.on('pointerdown', () => this.player.touchRight = true);
     right.on('pointerup',   () => this.player.touchRight = false);
     right.on('pointerout',  () => this.player.touchRight = false);
 
-    // ⬆️ JUMP
-    const jump = makeBtn(cam.width - 140, cam.height - 120, 'btn_jump');
+    // ⬆ JUMP
+    const jump = makeBtn(width - 140, height - 120, 'btn_jump');
     jump.on('pointerdown', () => this.player.touchJump = true);
-this.input.addPointer(2);
-this.createTouchControls();
-
 }
+
 
     update(){
         this.bg.tilePositionX=this.cameras.main.scrollX;
