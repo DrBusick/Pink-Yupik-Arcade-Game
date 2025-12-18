@@ -1,8 +1,4 @@
 // ======================= MENU SCENE ========================
-const tg = window.Telegram?.WebApp;
-tg?.ready();
-tg?.expand();
-
 class MenuScene extends Phaser.Scene {
     constructor() { super('MenuScene'); }
 
@@ -83,10 +79,6 @@ class Player extends Phaser.Physics.Arcade.Sprite {
             left2:'LEFT',right2:'RIGHT',up2:'UP'
         });
 
-        this.touchLeft = false;
-        this.touchRight = false;
-        this.touchJump = false;
-
         this.speed=260;
         this.accel=1200;
         this.jumpVelocity=520;
@@ -95,43 +87,41 @@ class Player extends Phaser.Physics.Arcade.Sprite {
 
         this.body.setMaxVelocity(this.speed,1000);
         this.body.setDragX(1000);
-this.touchLeft = false;
-this.touchRight = false;
-this.touchJump = false;
+
         this.walkSound=scene.sound.add('walk',{loop:true,volume:0.5});
     }
 
     preUpdate(time,delta){
         super.preUpdate(time,delta);
 
-        let moving = false;
+        let moving=false;
 
-        if (this.keys.left.isDown || this.keys.left2.isDown || this.touchLeft) {
-            this.setAccelerationX(-this.accel);
-            moving = true;
-        } else if (this.keys.right.isDown || this.keys.right2.isDown || this.touchRight) {
-            this.setAccelerationX(this.accel);
-            moving = true;
-        } else {
-            this.setAccelerationX(0);
-        }
+        if(this.keys.left.isDown||this.keys.left2.isDown){
+            this.setAccelerationX(-this.accel); moving=true;
+        } else if(this.keys.right.isDown||this.keys.right2.isDown){
+            this.setAccelerationX(this.accel); moving=true;
+        } else this.setAccelerationX(0);
 
         const jumpPressed =
             Phaser.Input.Keyboard.JustDown(this.keys.up) ||
-            Phaser.Input.Keyboard.JustDown(this.keys.up2) ||
-            this.touchJump;
+            Phaser.Input.Keyboard.JustDown(this.keys.up2);
 
-        if (jumpPressed && this.jumpCount < this.maxJumps) {
+        if(jumpPressed && this.jumpCount<this.maxJumps){
             this.setVelocityY(-this.jumpVelocity);
             this.jumpCount++;
+            this.scene.jumpSound.play();
         }
 
-        this.touchJump = false;
+        if(this.body.blocked.down){
+            this.jumpCount=0;
+            if(moving && !this.walkSound.isPlaying) this.walkSound.play();
+            if(!moving && this.walkSound.isPlaying) this.walkSound.stop();
+        } else if(this.walkSound.isPlaying){
+            this.walkSound.stop();
+        }
 
-        if (this.body.blocked.down) this.jumpCount = 0;
-
-        this.setFlipX(this.body.velocity.x < 0);
-        this.anims.play(moving ? 'walk' : 'idle', true);
+        this.setFlipX(this.body.velocity.x<0);
+        this.anims.play(moving?'walk':'idle',true);
     }
 }
 
@@ -149,9 +139,7 @@ class GameScene extends Phaser.Scene {
         this.load.image('ground','assets/platforms/ground.png');
         for(let i=1;i<=4;i++)
             this.load.image(`pf${i}`,`assets/platforms/platform_${i}.png`);
-        this.load.image('btn_left','assets/ui/btn_left.png');
-        this.load.image('btn_right','assets/ui/btn_right.png');
-        this.load.image('btn_jump','assets/ui/btn_jump.png');
+
         this.load.spritesheet('walk','assets/player/walk.png',{frameWidth:142,frameHeight:142});
         this.load.image('idle','assets/player/idle.png');
         this.load.image('heart','assets/items/heart_v4.png');
@@ -183,60 +171,7 @@ this.hoverSound = this.sound.add('hover', { volume: 0.6 });
 
         this.staticPlatforms=this.physics.add.staticGroup();
         this.movingPlatforms=this.physics.add.group({allowGravity:false,immovable:true});
- this.input.addPointer(2);
-        this.createTouchControls();
-    }
 
-createTouchControls() {
-    if (!this.sys.game.device.input.touch) return;
-
-    const cam = this.cameras.main;
-    const scaleIdle = 0.9;
-    const scaleDown = 0.8;
-
-    const makeBtn = (x, y, key) => {
-        const btn = this.add.image(x, y, key)
-            .setScrollFactor(0)
-            .setScale(scaleIdle)
-            .setAlpha(0.55)
-            .setInteractive();
-
-        btn.on('pointerdown', () => {
-            btn.setScale(scaleDown);
-            btn.setAlpha(0.85);
-        });
-
-        btn.on('pointerup', () => {
-            btn.setScale(scaleIdle);
-            btn.setAlpha(0.55);
-        });
-
-        btn.on('pointerout', () => {
-            btn.setScale(scaleIdle);
-            btn.setAlpha(0.55);
-        });
-
-        return btn;
-    };
-
-    // ◀️ LEFT
-    const left = makeBtn(130, cam.height - 120, 'btn_left');
-    left.on('pointerdown', () => this.player.touchLeft = true);
-    left.on('pointerup',   () => this.player.touchLeft = false);
-    left.on('pointerout',  () => this.player.touchLeft = false);
-
-    // ▶️ RIGHT
-    const right = makeBtn(260, cam.height - 120, 'btn_right');
-    right.on('pointerdown', () => this.player.touchRight = true);
-    right.on('pointerup',   () => this.player.touchRight = false);
-    right.on('pointerout',  () => this.player.touchRight = false);
-
-    // ⬆️ JUMP
-    const jump = makeBtn(cam.width - 140, cam.height - 120, 'btn_jump');
-    jump.on('pointerdown', () => this.player.touchJump = true);
-}
-
-    }
         this.spawnPlatforms();
 
         this.player=new Player(this,200,300);
