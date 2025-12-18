@@ -1,4 +1,8 @@
 // ======================= MENU SCENE ========================
+const tg = window.Telegram?.WebApp;
+tg?.ready();
+tg?.expand();
+
 class MenuScene extends Phaser.Scene {
     constructor() { super('MenuScene'); }
 
