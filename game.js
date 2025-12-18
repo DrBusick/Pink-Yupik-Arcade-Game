@@ -93,6 +93,9 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         this.body.setDragX(1000);
 
         this.walkSound=scene.sound.add('walk',{loop:true,volume:0.5});
+this.touchLeft = false;
+this.touchRight = false;
+this.touchJump = false;
     }
 
     preUpdate(time,delta){
@@ -126,6 +129,7 @@ class Player extends Phaser.Physics.Arcade.Sprite {
 
         this.setFlipX(this.body.velocity.x<0);
         this.anims.play(moving?'walk':'idle',true);
+this.touchJump = false;
     }
 }
 
@@ -139,6 +143,9 @@ class GameScene extends Phaser.Scene {
     }
 
     preload(){
+this.load.image('btn_left',  'assets/ui/btn_left.png');
+this.load.image('btn_right', 'assets/ui/btn_right.png');
+this.load.image('btn_jump',  'assets/ui/btn_jump.png');
         this.load.image('bg','assets/backgrounds/bg.png');
         this.load.image('ground','assets/platforms/ground.png');
         for(let i=1;i<=4;i++)
@@ -284,6 +291,55 @@ const btnStyle = { fontFamily: 'UnifrakturCook', fontSize: '40px', fill: '#e8d9b
             }
         }
     }
+this.createTouchControls();
+createTouchControls() {
+    if (!this.sys.game.device.input.touch) return;
+
+    const cam = this.cameras.main;
+    const scaleIdle = 0.9;
+    const scaleDown = 0.8;
+
+    const makeBtn = (x, y, key) => {
+        const btn = this.add.image(x, y, key)
+            .setScrollFactor(0)
+            .setScale(scaleIdle)
+            .setAlpha(0.55)
+            .setInteractive();
+
+        btn.on('pointerdown', () => {
+            btn.setScale(scaleDown);
+            btn.setAlpha(0.85);
+        });
+
+        btn.on('pointerup', () => {
+            btn.setScale(scaleIdle);
+            btn.setAlpha(0.55);
+        });
+
+        btn.on('pointerout', () => {
+            btn.setScale(scaleIdle);
+            btn.setAlpha(0.55);
+        });
+
+        return btn;
+    };
+
+    // ◀️ LEFT
+    const left = makeBtn(130, cam.height - 120, 'btn_left');
+    left.on('pointerdown', () => this.player.touchLeft = true);
+    left.on('pointerup',   () => this.player.touchLeft = false);
+    left.on('pointerout',  () => this.player.touchLeft = false);
+
+    // ▶️ RIGHT
+    const right = makeBtn(260, cam.height - 120, 'btn_right');
+    right.on('pointerdown', () => this.player.touchRight = true);
+    right.on('pointerup',   () => this.player.touchRight = false);
+    right.on('pointerout',  () => this.player.touchRight = false);
+
+    // ⬆️ JUMP
+    const jump = makeBtn(cam.width - 140, cam.height - 120, 'btn_jump');
+    jump.on('pointerdown', () => this.player.touchJump = true);
+}
 
     update(){
         this.bg.tilePositionX=this.cameras.main.scrollX;
