@@ -1,7 +1,11 @@
 // ======================= MENU SCENE ========================
-const tg = window.Telegram?.WebApp;
-tg?.ready();
-tg?.expand();
+let tg = null;
+if (window.Telegram && window.Telegram.WebApp) {
+    tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+}
+
 
 class MenuScene extends Phaser.Scene {
     constructor() { super('MenuScene'); }
@@ -341,6 +345,8 @@ createTouchControls() {
     // ⬆️ JUMP
     const jump = makeBtn(cam.width - 140, cam.height - 120, 'btn_jump');
     jump.on('pointerdown', () => this.player.touchJump = true);
+this.input.addPointer(2);
+this.createTouchControls();
 
 }
 
