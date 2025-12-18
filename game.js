@@ -309,30 +309,31 @@ createTouchControls() {
     const scaleDown = 0.8;
 
     const makeBtn = (x, y, key) => {
-        const btn = this.add.image(x, y, key)
-            .setScrollFactor(0)
-            .setDepth(9999)
-            .setScale(scaleIdle)
-            .setAlpha(0.55)
-            .setInteractive();
+    const btn = this.add.image(x, y, key)
+        .setScrollFactor(0)
+        .setDepth(9999)
+        .setScale(scaleIdle)
+        .setAlpha(0.55)
+        .setInteractive({ pointerDownOutside: true });
 
-        btn.on('pointerdown', () => {
-            btn.setScale(scaleDown);
-            btn.setAlpha(0.85);
-        });
+    btn.on('pointerdown', () => {
+        btn.setScale(scaleDown);
+        btn.setAlpha(0.85);
+    });
 
-        btn.on('pointerup', () => {
-            btn.setScale(scaleIdle);
-            btn.setAlpha(0.55);
-        });
+    btn.on('pointerup', () => {
+        btn.setScale(scaleIdle);
+        btn.setAlpha(0.55);
+    });
 
-        btn.on('pointerout', () => {
-            btn.setScale(scaleIdle);
-            btn.setAlpha(0.55);
-        });
+    btn.on('pointerout', () => {
+        btn.setScale(scaleIdle);
+        btn.setAlpha(0.55);
+    });
 
-        return btn;
-    };
+    return btn;
+};
+
 
     const left = makeBtn(130, height - 120, 'btn_left');
     left.on('pointerdown', () => this.player.touchLeft = true);
@@ -345,7 +346,10 @@ createTouchControls() {
     right.on('pointerout',  () => this.player.touchRight = false);
 
     const jump = makeBtn(width - 140, height - 120, 'btn_jump');
-    jump.on('pointerdown', () => this.player.touchJump = true);
+jump.on('pointerdown', () => this.player.touchJump = true);
+jump.on('pointerup',   () => this.player.touchJump = false);
+jump.on('pointerout',  () => this.player.touchJump = false);
+
 }
 
 
