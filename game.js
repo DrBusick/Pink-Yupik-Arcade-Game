@@ -300,10 +300,9 @@ this.createTouchControls();
         }
     }
 
-createTouchControls() {
-    
+  
 
-   createTouchControls() {
+createTouchControls() {
     const { width, height } = this.scale;
 
     const scaleIdle = 0.9;
@@ -335,19 +334,16 @@ createTouchControls() {
         return btn;
     };
 
-    // ◀ LEFT
     const left = makeBtn(130, height - 120, 'btn_left');
     left.on('pointerdown', () => this.player.touchLeft = true);
     left.on('pointerup',   () => this.player.touchLeft = false);
     left.on('pointerout',  () => this.player.touchLeft = false);
 
-    // ▶ RIGHT
     const right = makeBtn(260, height - 120, 'btn_right');
     right.on('pointerdown', () => this.player.touchRight = true);
     right.on('pointerup',   () => this.player.touchRight = false);
     right.on('pointerout',  () => this.player.touchRight = false);
 
-    // ⬆ JUMP
     const jump = makeBtn(width - 140, height - 120, 'btn_jump');
     jump.on('pointerdown', () => this.player.touchJump = true);
 }
