@@ -103,20 +103,22 @@ this.touchJump = false;
 
         let moving=false;
 
-        if(this.keys.left.isDown||this.keys.left2.isDown){
+        if (this.keys.left.isDown || this.keys.left2.isDown || this.touchLeft) {
             this.setAccelerationX(-this.accel); moving=true;
-        } else if(this.keys.right.isDown||this.keys.right2.isDown){
+        } else if (this.keys.right.isDown || this.keys.right2.isDown || this.touchRight) {
             this.setAccelerationX(this.accel); moving=true;
         } else this.setAccelerationX(0);
 
-        const jumpPressed =
-            Phaser.Input.Keyboard.JustDown(this.keys.up) ||
-            Phaser.Input.Keyboard.JustDown(this.keys.up2);
+      const jumpPressed =
+    Phaser.Input.Keyboard.JustDown(this.keys.up) ||
+    Phaser.Input.Keyboard.JustDown(this.keys.up2) ||
+    this.touchJump;
 
         if(jumpPressed && this.jumpCount<this.maxJumps){
             this.setVelocityY(-this.jumpVelocity);
             this.jumpCount++;
             this.scene.jumpSound.play();
+this.touchJump = false;
         }
 
         if(this.body.blocked.down){
@@ -129,7 +131,7 @@ this.touchJump = false;
 
         this.setFlipX(this.body.velocity.x<0);
         this.anims.play(moving?'walk':'idle',true);
-this.touchJump = false;
+
     }
 }
 
@@ -291,9 +293,9 @@ const btnStyle = { fontFamily: 'UnifrakturCook', fontSize: '40px', fill: '#e8d9b
             }
         }
     }
-this.createTouchControls();
+
 createTouchControls() {
-    if (!this.sys.game.device.input.touch) return;
+    
 
     const cam = this.cameras.main;
     const scaleIdle = 0.9;
@@ -339,6 +341,7 @@ createTouchControls() {
     // ⬆️ JUMP
     const jump = makeBtn(cam.width - 140, cam.height - 120, 'btn_jump');
     jump.on('pointerdown', () => this.player.touchJump = true);
+
 }
 
     update(){
