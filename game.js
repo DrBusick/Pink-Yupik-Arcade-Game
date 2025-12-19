@@ -245,7 +245,7 @@ this.hoverSound = this.sound.add('hover', { volume: 0.6 });
         this.winText=this.add.text(
             this.cameras.main.centerX,
             this.cameras.main.centerY,
-            'ВСІ 25 СЕРДЕЧОК\nЗІБРАНО!',
+            'ALL 25 HEARTS\nCOLLECTED!',
             {fontFamily:'UnifrakturCook',fontSize:'96px',fill:'#fff2c1',align:'center'}
         ).setOrigin(0.5).setScrollFactor(0).setAlpha(0)
          .setShadow(0,0,'#ff77aa',40,true,true);
