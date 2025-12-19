@@ -1,40 +1,50 @@
 ﻿<!DOCTYPE html>
 <html lang="uk">
 <head>
-<meta charset="utf-8" />
-<title>Pink Yupik Arcade</title>
+    <meta charset="utf-8" />
+    <title>Pink Yupik Arcade</title>
 
-<!-- Phaser 3 -->
-<script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+    <!-- TELEGRAM MINI APP VIEWPORT -->
+    <meta name="viewport"
+          content="width=device-width,
+                   height=device-height,
+                   initial-scale=1.0,
+                   maximum-scale=1.0,
+                   user-scalable=no">
 
-<!-- Telegram WebApp SDK -->
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
 
-<style>
-html, body {
-    margin: 0;
-    padding: 0;
-    background: #000;
-    overflow: hidden;
-    width: 100%;
-    height: 100%;
-}
-canvas {
-    display: block;
-    width: 100%;
-    height: 100%;
-}
-</style>
+    <!-- Phaser -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+
+    <!-- Telegram SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
 <body>
-<script src="game.js"></script>
 
 <script>
-if (window.Telegram && Telegram.WebApp) {
-    Telegram.WebApp.ready();
-    Telegram.WebApp.expand();
-}
+    // === TELEGRAM MINI APP INIT ===
+    if (window.Telegram && Telegram.WebApp) {
+        const tg = Telegram.WebApp;
+
+        tg.ready();
+        tg.expand();
+
+        // Рекомендується Telegram
+        tg.disableVerticalSwipes();
+        tg.setHeaderColor('#000000');
+        tg.setBackgroundColor('#000000');
+    }
+
+    // === ЧЕКАЄМО ШРИФТИ ===
+    document.fonts.ready.then(() => {
+        const gameScript = document.createElement('script');
+        gameScript.src = 'game.js';
+        document.body.appendChild(gameScript);
+    });
 </script>
+
 </body>
 </html>
