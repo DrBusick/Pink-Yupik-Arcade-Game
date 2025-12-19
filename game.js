@@ -74,70 +74,100 @@ class MenuScene extends Phaser.Scene {
 
 // ======================= PLAYER ========================
 class Player extends Phaser.Physics.Arcade.Sprite {
-    constructor(scene,x,y){
-        super(scene,x,y,'idle');
+    constructor(scene, x, y) {
+        super(scene, x, y, 'idle');
+
         scene.add.existing(this);
         scene.physics.add.existing(this);
 
+        // ─── Physics ─────────────────────────────
         this.setCollideWorldBounds(true);
-        this.setBodySize(90,120).setOffset(26,18);
+        this.setBodySize(90, 120).setOffset(26, 18);
 
-        this.keys=scene.input.keyboard.addKeys({
-            left:'A',right:'D',up:'W',
-            left2:'LEFT',right2:'RIGHT',up2:'UP'
-        });
+        this.speed = 260;
+        this.accel = 1200;
+        this.jumpVelocity = 520;
 
-        this.speed=260;
-        this.accel=1200;
-        this.jumpVelocity=520;
-        this.jumpCount=0;
-        this.maxJumps=3;
-
-        this.body.setMaxVelocity(this.speed,1000);
+        this.body.setMaxVelocity(this.speed, 1000);
         this.body.setDragX(1000);
 
-        this.walkSound=scene.sound.add('walk',{loop:true,volume:0.5});
-this.touchLeft = false;
-this.touchRight = false;
-this.touchJump = false;
+        // ─── State ───────────────────────────────
+        this.facing = 'right';
+        this.jumpCount = 0;
+        this.maxJumps = 3;
+
+        // ─── Input ───────────────────────────────
+        this.keys = scene.input.keyboard.addKeys({
+            left: 'A',
+            right: 'D',
+            up: 'W',
+            left2: 'LEFT',
+            right2: 'RIGHT',
+            up2: 'UP'
+        });
+
+        this.touchLeft = false;
+        this.touchRight = false;
+        this.touchJump = false;
+
+        // ─── Sound ───────────────────────────────
+        this.walkSound = scene.sound.add('walk', {
+            loop: true,
+            volume: 0.5
+        });
     }
 
-    preUpdate(time,delta){
-        super.preUpdate(time,delta);
+    preUpdate(time, delta) {
+        super.preUpdate(time, delta);
 
-        let moving=false;
+        const moveLeft  = this.keys.left.isDown  || this.keys.left2.isDown  || this.touchLeft;
+        const moveRight = this.keys.right.isDown || this.keys.right2.isDown || this.touchRight;
 
-        if (this.keys.left.isDown || this.keys.left2.isDown || this.touchLeft) {
-            this.setAccelerationX(-this.accel); moving=true;
-        } else if (this.keys.right.isDown || this.keys.right2.isDown || this.touchRight) {
-            this.setAccelerationX(this.accel); moving=true;
-        } else this.setAccelerationX(0);
+        // ─── Horizontal movement ────────────────
+        if (moveLeft) {
+            this.setAccelerationX(-this.accel);
+            this.facing = 'left';
+        } else if (moveRight) {
+            this.setAccelerationX(this.accel);
+            this.facing = 'right';
+        } else {
+            this.setAccelerationX(0);
+        }
 
-      const jumpPressed =
-    Phaser.Input.Keyboard.JustDown(this.keys.up) ||
-    Phaser.Input.Keyboard.JustDown(this.keys.up2) ||
-    this.touchJump;
+        const isMoving = moveLeft || moveRight;
 
-        if(jumpPressed && this.jumpCount<this.maxJumps){
+        // ─── Jump ────────────────────────────────
+        const jumpPressed =
+            Phaser.Input.Keyboard.JustDown(this.keys.up) ||
+            Phaser.Input.Keyboard.JustDown(this.keys.up2) ||
+            this.touchJump;
+
+        if (jumpPressed && this.jumpCount < this.maxJumps) {
             this.setVelocityY(-this.jumpVelocity);
             this.jumpCount++;
             this.scene.jumpSound.play();
-this.touchJump = false;
+            this.touchJump = false;
         }
 
-        if(this.body.blocked.down){
-            this.jumpCount=0;
-            if(moving && !this.walkSound.isPlaying) this.walkSound.play();
-            if(!moving && this.walkSound.isPlaying) this.walkSound.stop();
-        } else if(this.walkSound.isPlaying){
+        // ─── Ground check ────────────────────────
+        if (this.body.blocked.down) {
+            this.jumpCount = 0;
+
+            if (isMoving && !this.walkSound.isPlaying) {
+                this.walkSound.play();
+            } else if (!isMoving && this.walkSound.isPlaying) {
+                this.walkSound.stop();
+            }
+        } else if (this.walkSound.isPlaying) {
             this.walkSound.stop();
         }
 
-        this.setFlipX(this.body.velocity.x<0);
-        this.anims.play(moving?'walk':'idle',true);
-
+        // ─── Visuals ─────────────────────────────
+        this.setFlipX(this.facing === 'left');
+        this.anims.play(isMoving ? 'walk' : 'idle', true);
     }
 }
+
 
 // ======================= GAME SCENE ========================
 class GameScene extends Phaser.Scene {
