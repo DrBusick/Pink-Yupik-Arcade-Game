@@ -9,6 +9,9 @@ const TEXT_STYLE = {
   strokeThickness: 3
 };
 
+let selectedPlayer = "p1";
+
+// MENU
 class Menu extends Phaser.Scene {
   constructor(){ super("Menu"); }
   preload(){
@@ -19,34 +22,42 @@ class Menu extends Phaser.Scene {
     this.add.image(0,0,"menuBg").setOrigin(0).setDisplaySize(WIDTH,HEIGHT);
     this.add.text(WIDTH/2,100,"PINK YUPIK ARCADE",{...TEXT_STYLE,fontSize:"64px"}).setOrigin(0.5);
 
+    this.sndHover = this.sound.add("hover");
+
     const play = this.add.text(WIDTH/2,HEIGHT/2,"PLAY",TEXT_STYLE).setOrigin(0.5).setInteractive();
-    play.on("pointerdown",()=>this.scene.start("Select"));
-    play.on("pointerover",()=>play.setTint(0x00ffcc));
+    play.on("pointerover",()=>{ play.setTint(0x00ffcc); this.sndHover.play(); });
     play.on("pointerout",()=>play.clearTint());
+    play.on("pointerdown",()=>this.scene.start("Select"));
   }
 }
 
+// SELECT
 class Select extends Phaser.Scene {
   constructor(){ super("Select"); }
   preload(){
-    this.load.image("p1","assets/player/player1/walk.png");
-    this.load.image("p2","assets/player/player2/walk.png");
+    this.load.spritesheet("p1","assets/player/player1/walk.png",{frameWidth:128,frameHeight:128});
+    this.load.spritesheet("p2","assets/player/player2/walk.png",{frameWidth:128,frameHeight:128});
   }
   create(){
     this.add.text(WIDTH/2,80,"Select Character",TEXT_STYLE).setOrigin(0.5);
-    const p1=this.add.image(WIDTH/2-200,HEIGHT/2,"p1").setInteractive();
-    const p2=this.add.image(WIDTH/2+200,HEIGHT/2,"p2").setInteractive();
+
+    const p1 = this.add.sprite(WIDTH/2-200,HEIGHT/2,"p1",0).setScale(1.2).setInteractive();
+    const p2 = this.add.sprite(WIDTH/2+200,HEIGHT/2,"p2",0).setScale(1.2).setInteractive();
 
     [p1,p2].forEach(p=>{
       p.on("pointerover",()=>p.setTint(0x00ffcc));
       p.on("pointerout",()=>p.clearTint());
     });
 
-    p1.on("pointerdown",()=>this.scene.start("Game",{player:"p1"}));
-    p2.on("pointerdown",()=>this.scene.start("Game",{player:"p2"}));
+    p1.on("pointerdown",()=>{ selectedPlayer="p1"; this.scene.start("Game"); });
+    p2.on("pointerdown",()=>{ selectedPlayer="p2"; this.scene.start("Game"); });
+
+    const back = this.add.text(20,20,"MENU",{...TEXT_STYLE,fontSize:"28px"}).setInteractive();
+    back.on("pointerdown",()=>this.scene.start("Menu"));
   }
 }
 
+// GAME
 class Game extends Phaser.Scene {
   constructor(){ super("Game"); }
   preload(){
@@ -56,10 +67,13 @@ class Game extends Phaser.Scene {
     this.load.image("heart","assets/items/heart_v4.png");
     this.load.audio("collect","assets/sounds/collect.mp3");
     this.load.audio("jump","assets/sounds/jump.mp3");
+
+    this.load.spritesheet("p1","assets/player/player1/walk.png",{frameWidth:128,frameHeight:128});
+    this.load.spritesheet("p2","assets/player/player2/walk.png",{frameWidth:128,frameHeight:128});
   }
 
-  create(data){
-    this.bg=this.add.tileSprite(0,0,4000,HEIGHT,"bg").setOrigin(0).setScrollFactor(0.2);
+  create(){
+    this.bg = this.add.tileSprite(0,0,4000,HEIGHT,"bg").setOrigin(0).setScrollFactor(0);
 
     this.platforms=this.physics.add.staticGroup();
     this.platforms.create(640,700,"ground").setScale(2).refreshBody();
@@ -67,7 +81,10 @@ class Game extends Phaser.Scene {
       this.platforms.create(300+i*400,500-(i%2)*100,"platform");
     }
 
-    this.player=this.physics.add.sprite(100,500,data.player);
+    this.anims.create({ key:"walk", frames:this.anims.generateFrameNumbers(selectedPlayer,{start:0,end:5}), frameRate:8, repeat:-1 });
+
+    this.player=this.physics.add.sprite(100,500,selectedPlayer,0);
+    this.player.play("walk");
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player,this.platforms);
 
@@ -81,6 +98,9 @@ class Game extends Phaser.Scene {
       h.body.allowGravity=false;
     }
 
+    this.collected=0;
+    this.counter=this.add.text(20,20,"0/20",TEXT_STYLE).setScrollFactor(0);
+
     this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
       h.destroy();
       this.sound.play("collect");
@@ -91,34 +111,31 @@ class Game extends Phaser.Scene {
       }
     });
 
-    this.collected=0;
-    this.counter=this.add.text(20,20,"0/20",TEXT_STYLE).setScrollFactor(0);
-
     const menuBtn=this.add.text(20,60,"MENU",{...TEXT_STYLE,fontSize:"28px"}).setScrollFactor(0).setInteractive();
     menuBtn.on("pointerdown",()=>this.scene.start("Menu"));
-    menuBtn.on("pointerover",()=>menuBtn.setTint(0x00ffcc));
-    menuBtn.on("pointerout",()=>menuBtn.clearTint());
 
     this.jumpCount=0;
   }
 
   update(){
-    this.bg.tilePositionX=this.cameras.main.scrollX*0.3;
+    this.bg.tilePositionX = this.cameras.main.scrollX * 0.3;
 
     if(this.cursors.left.isDown){
       this.player.setVelocityX(-200);
+      this.player.setFlipX(true);
     } else if(this.cursors.right.isDown){
       this.player.setVelocityX(200);
+      this.player.setFlipX(false);
     } else {
       this.player.setVelocityX(0);
     }
 
-    if(this.cursors.up.isDown && this.jumpCount<3){
+    if(Phaser.Input.Keyboard.JustDown(this.cursors.up) && this.jumpCount<3){
       this.player.setVelocityY(-400);
       this.sound.play("jump");
       this.jumpCount++;
     }
-    if(this.player.body.touching.down){
+    if(this.player.body.blocked.down){
       this.jumpCount=0;
     }
   }
@@ -132,4 +149,3 @@ new Phaser.Game({
   physics:{default:"arcade",arcade:{gravity:{y:800}}},
   scene:[Menu,Select,Game]
 });
-
