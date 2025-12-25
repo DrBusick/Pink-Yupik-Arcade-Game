@@ -1,4 +1,4 @@
-console.log("🔥 main.js FINAL v4");
+console.log("🔥 main.js FINAL v5");
 
 // ======================= TELEGRAM ========================
 let tg = null;
@@ -7,9 +7,6 @@ if (window.Telegram && window.Telegram.WebApp) {
     tg.ready();
     tg.expand();
 }
-
-// ======================= GLOBAL =========================
-let selectedCharacter = null;
 
 // ======================= MENU SCENE =====================
 class MenuScene extends Phaser.Scene {
@@ -53,7 +50,13 @@ class MenuScene extends Phaser.Scene {
 
         exit.on('pointerdown',()=>{
             this.hoverSound.play();
-            if (tg) tg.close();
+            if (tg && tg.close) {
+                tg.close();
+            } else if (window.close) {
+                window.close();
+            } else {
+                alert("Закрий вкладку вручну");
+            }
         });
     }
 
@@ -99,6 +102,8 @@ class CharacterSelectScene extends Phaser.Scene {
         const frame2=this.add.rectangle(width/2+220,height/2,240,240)
             .setStrokeStyle(4,0xfff2c1).setAlpha(0);
 
+        let selected = null;
+
         const makeChar = (x,key,id,frame)=>{
             const s=this.add.image(x,height/2,key)
                 .setScale(1.2)
@@ -106,7 +111,7 @@ class CharacterSelectScene extends Phaser.Scene {
 
             s.on('pointerdown',()=>{
                 this.hoverSound.play();
-                selectedCharacter=id;
+                selected=id;
                 frame1.setAlpha(0);
                 frame2.setAlpha(0);
                 frame.setAlpha(1);
@@ -123,9 +128,9 @@ class CharacterSelectScene extends Phaser.Scene {
         }).setOrigin(0.5).setInteractive({useHandCursor:true});
 
         start.on('pointerdown',()=>{
-            if(!selectedCharacter) return;
+            if(!selected) return;
             this.hoverSound.play();
-            this.scene.start('GameScene');
+            this.scene.start('GameScene',{ character:selected });
         });
     }
 
@@ -138,8 +143,8 @@ class CharacterSelectScene extends Phaser.Scene {
 
 // ======================= PLAYER =========================
 class Player extends Phaser.Physics.Arcade.Sprite {
-    constructor(scene,x,y){
-        super(scene,x,y,'idle');
+    constructor(scene,x,y,animKey){
+        super(scene,x,y,animKey);
         scene.add.existing(this);
         scene.physics.add.existing(this);
 
@@ -159,17 +164,13 @@ class Player extends Phaser.Physics.Arcade.Sprite {
             left:'A', right:'D', up:'W',
             left2:'LEFT', right2:'RIGHT', up2:'UP'
         });
-
-        this.touchLeft=false;
-        this.touchRight=false;
-        this.touchJump=false;
     }
 
     preUpdate(time, delta){
         super.preUpdate(time, delta);
 
-        const left = this.keys.left.isDown || this.keys.left2.isDown || this.touchLeft;
-        const right = this.keys.right.isDown || this.keys.right2.isDown || this.touchRight;
+        const left = this.keys.left.isDown || this.keys.left2.isDown;
+        const right = this.keys.right.isDown || this.keys.right2.isDown;
 
         if(left){
             this.setAccelerationX(-this.accel);
@@ -185,165 +186,61 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         if (this.body.velocity.x < -this.maxSpeed) this.setVelocityX(-this.maxSpeed);
 
         if((Phaser.Input.Keyboard.JustDown(this.keys.up)||
-            Phaser.Input.Keyboard.JustDown(this.keys.up2)||
-            this.touchJump) && this.jumpCount < this.maxJumps){
+            Phaser.Input.Keyboard.JustDown(this.keys.up2)) && this.jumpCount < this.maxJumps){
             this.setVelocityY(-this.jumpVelocity);
             this.scene.jumpSound.play();
             this.jumpCount++;
-            this.touchJump = false;
         }
 
         if(this.body.blocked.down) this.jumpCount = 0;
 
         const moving = Math.abs(this.body.velocity.x) > 5;
-        this.anims.play(moving ? 'walk' : 'idle', true);
+        this.anims.play(moving ? this.walkAnim : this.idleAnim, true);
     }
 }
 
 // ======================= GAME SCENE =====================
 class GameScene extends Phaser.Scene {
-    constructor(){
-        super('GameScene');
-        this.worldWidth = 6000;
-        this.worldHeight = 832;
-        this.heartsCollected = 0;
+    constructor(){ super('GameScene'); }
+
+    init(data){
+        this.character = data.character || 'player1';
     }
 
     preload(){
         this.load.image('bg','assets/backgrounds/bg.png');
         this.load.image('ground','assets/platforms/ground.png');
 
-        for(let i=1;i<=4;i++)
-            this.load.image(`pf${i}`,`assets/platforms/platform_${i}.png`);
-
-        this.load.image('heart','assets/items/heart_v4.png');
-
-        this.load.audio('jump','assets/sounds/jump.mp3');
-        this.load.audio('collect','assets/sounds/collect.mp3');
-        this.load.audio('hover','assets/sounds/hover.mp3');
-
         this.load.image('p1_idle','assets/player1/idle.png');
         this.load.spritesheet('p1_walk','assets/player1/walk.png',{frameWidth:142,frameHeight:142});
 
         this.load.image('p2_idle','assets/player2/idle.png');
         this.load.spritesheet('p2_walk','assets/player2/walk.png',{frameWidth:142,frameHeight:142});
+
+        this.load.audio('jump','assets/sounds/jump.mp3');
     }
 
     create(){
-        const idleKey = selectedCharacter === 'player2' ? 'p2_idle' : 'p1_idle';
-        const walkKey = selectedCharacter === 'player2' ? 'p2_walk' : 'p1_walk';
+        const idle = this.character === 'player2' ? 'p2_idle' : 'p1_idle';
+        const walk = this.character === 'player2' ? 'p2_walk' : 'p1_walk';
 
-        this.anims.remove('idle');
-        this.anims.remove('walk');
+        const idleKey = `idle_${this.character}`;
+        const walkKey = `walk_${this.character}`;
 
-        this.anims.create({ key:'idle', frames:[{key:idleKey}], repeat:-1 });
-        this.anims.create({ key:'walk', frames:this.anims.generateFrameNumbers(walkKey), frameRate:10, repeat:-1 });
-
-        this.jumpSound   = this.sound.add('jump');
-        this.collectSound= this.sound.add('collect');
-        this.hoverSound  = this.sound.add('hover',{volume:0.6});
-
-        this.physics.world.setBounds(0,0,this.worldWidth,this.worldHeight);
-
-        this.bg = this.add.tileSprite(0,0,1248,832,'bg').setOrigin(0).setScrollFactor(0);
-
-        this.ground = this.physics.add.staticGroup();
-        const gW = this.textures.get('ground').getSourceImage().width;
-        for(let i=0;i<this.worldWidth/gW;i++){
-            this.ground.create(i*gW+gW/2,this.worldHeight,'ground')
-                .setOrigin(0.5,1).refreshBody();
+        if(!this.anims.exists(idleKey)){
+            this.anims.create({ key:idleKey, frames:[{key:idle}], repeat:-1 });
+            this.anims.create({ key:walkKey, frames:this.anims.generateFrameNumbers(walk), frameRate:10, repeat:-1 });
         }
 
-        this.staticPlatforms = this.physics.add.staticGroup();
-        this.movingPlatforms = this.physics.add.group({ allowGravity:false, immovable:true });
+        this.jumpSound = this.sound.add('jump');
 
-        this.spawnPlatforms();
+        this.physics.world.setBounds(0,0,6000,832);
 
-        this.player = new Player(this,200,300);
-        this.physics.add.collider(this.player,this.ground);
-        this.physics.add.collider(this.player,this.staticPlatforms);
-        this.physics.add.collider(this.player,this.movingPlatforms);
-
-        this.hearts = this.physics.add.staticGroup();
-        this.spawnHeartsSafe(25);
-
-        this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
-            h.destroy();
-            this.collectSound.play();
-            this.heartsCollected++;
-            this.heartText.setText(`❤️ ${this.heartsCollected} / 25`);
-        });
-
-        this.heartText = this.add.text(20,60,'❤️ 0 / 25',{fontSize:'32px',fill:'#e8d9b0'}).setScrollFactor(0);
-
-        this.menuButton = this.add.text(20,20,'MENU',{
-            fontFamily:'UnifrakturCook, serif',
-            fontSize:'40px',
-            fill:'#e8d9b0'
-        }).setScrollFactor(0).setInteractive({useHandCursor:true});
-
-        this.menuButton.on('pointerdown',()=>{
-            this.hoverSound.play();
-            this.scene.start('MenuScene');
-        });
+        this.player = new Player(this,200,300,idleKey);
+        this.player.idleAnim = idleKey;
+        this.player.walkAnim = walkKey;
 
         this.cameras.main.startFollow(this.player,true,0.12,0.12);
-        this.cameras.main.setBounds(0,0,this.worldWidth,this.worldHeight);
-    }
-
-    spawnPlatforms(){
-        const keys=['pf1','pf2','pf3','pf4'];
-        const movingIdx=[2,6,10,14,18,22,26,29];
-        let x=400;
-
-        for(let i=0;i<30;i++){
-            const y=Phaser.Math.Between(220,520);
-            const key=Phaser.Utils.Array.GetRandom(keys);
-
-            if(movingIdx.includes(i)){
-                const p=this.movingPlatforms.create(x,y,key);
-                p.startY=y;
-                p.range=120;
-                p.speed=50;
-                p.body.setVelocityY(p.speed);
-            } else {
-                this.staticPlatforms.create(x,y,key).refreshBody();
-            }
-            x+=Phaser.Math.Between(260,320);
-        }
-    }
-
-    spawnHeartsSafe(count){
-        const hearts=[];
-        const platforms=[...this.staticPlatforms.getChildren(),...this.movingPlatforms.getChildren()];
-        let attempts=0;
-
-        while(hearts.length<count && attempts<5000){
-            attempts++;
-            const x=Phaser.Math.Between(200,this.worldWidth-200);
-            const y=Phaser.Math.Between(150,500);
-            const rect=new Phaser.Geom.Rectangle(x-25,y-25,50,50);
-
-            let bad=false;
-            for(const h of hearts)
-                if(Phaser.Geom.Intersects.RectangleToRectangle(rect,h)) bad=true;
-            for(const p of platforms)
-                if(Phaser.Geom.Intersects.RectangleToRectangle(rect,p.getBounds())) bad=true;
-
-            if(!bad){
-                this.hearts.create(x,y,'heart').setDisplaySize(50,50).refreshBody();
-                hearts.push(rect);
-            }
-        }
-    }
-
-    update(){
-        this.bg.tilePositionX = this.cameras.main.scrollX;
-
-        this.movingPlatforms.getChildren().forEach(p=>{
-            if(p.y > p.startY + p.range) p.body.setVelocityY(-p.speed);
-            if(p.y < p.startY - p.range) p.body.setVelocityY(p.speed);
-        });
     }
 }
 
