@@ -1,4 +1,4 @@
-console.log("🔥 main.js LOADED FINAL v3");
+console.log("🔥 main.js FINAL v4");
 
 // ======================= TELEGRAM ========================
 let tg = null;
@@ -233,6 +233,9 @@ class GameScene extends Phaser.Scene {
         const idleKey = selectedCharacter === 'player2' ? 'p2_idle' : 'p1_idle';
         const walkKey = selectedCharacter === 'player2' ? 'p2_walk' : 'p1_walk';
 
+        this.anims.remove('idle');
+        this.anims.remove('walk');
+
         this.anims.create({ key:'idle', frames:[{key:idleKey}], repeat:-1 });
         this.anims.create({ key:'walk', frames:this.anims.generateFrameNumbers(walkKey), frameRate:10, repeat:-1 });
 
@@ -274,7 +277,7 @@ class GameScene extends Phaser.Scene {
         this.heartText = this.add.text(20,60,'❤️ 0 / 25',{fontSize:'32px',fill:'#e8d9b0'}).setScrollFactor(0);
 
         this.menuButton = this.add.text(20,20,'MENU',{
-            fontFamily:'UnifrakturCook',
+            fontFamily:'UnifrakturCook, serif',
             fontSize:'40px',
             fill:'#e8d9b0'
         }).setScrollFactor(0).setInteractive({useHandCursor:true});
