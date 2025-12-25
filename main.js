@@ -4,6 +4,8 @@ let selectedCharacter = null;
 let heartsCollected = 0;
 const TOTAL_HEARTS = 20;
 
+window.addEventListener("DOMContentLoaded", () => {
+
 // MENU
 class MenuScene extends Phaser.Scene {
   constructor(){super("Menu");}
@@ -212,4 +214,6 @@ new Phaser.Game({
   scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
   physics:{default:"arcade",arcade:{gravity:{y:900}}},
   scene:[MenuScene,SelectScene,GameScene]
+});
+
 });
