@@ -9,7 +9,7 @@ const TEXT_STYLE = {
   strokeThickness: 3
 };
 
-let selectedPlayer = "p1";
+let selectedPlayer = "player1";
 
 // MENU
 class Menu extends Phaser.Scene {
@@ -35,22 +35,22 @@ class Menu extends Phaser.Scene {
 class Select extends Phaser.Scene {
   constructor(){ super("Select"); }
   preload(){
-    this.load.spritesheet("p1","assets/player/player1/walk.png",{frameWidth:128,frameHeight:128});
-    this.load.spritesheet("p2","assets/player/player2/walk.png",{frameWidth:128,frameHeight:128});
+    this.load.spritesheet("player1","assets/player1/walk.png",{frameWidth:128,frameHeight:128});
+    this.load.spritesheet("player2","assets/player2/walk.png",{frameWidth:128,frameHeight:128});
   }
   create(){
     this.add.text(WIDTH/2,80,"Select Character",TEXT_STYLE).setOrigin(0.5);
 
-    const p1 = this.add.sprite(WIDTH/2-200,HEIGHT/2,"p1",0).setScale(1.2).setInteractive();
-    const p2 = this.add.sprite(WIDTH/2+200,HEIGHT/2,"p2",0).setScale(1.2).setInteractive();
+    const p1 = this.add.sprite(WIDTH/2-200,HEIGHT/2,"player1",0).setScale(1.2).setInteractive();
+    const p2 = this.add.sprite(WIDTH/2+200,HEIGHT/2,"player2",0).setScale(1.2).setInteractive();
 
     [p1,p2].forEach(p=>{
       p.on("pointerover",()=>p.setTint(0x00ffcc));
       p.on("pointerout",()=>p.clearTint());
     });
 
-    p1.on("pointerdown",()=>{ selectedPlayer="p1"; this.scene.start("Game"); });
-    p2.on("pointerdown",()=>{ selectedPlayer="p2"; this.scene.start("Game"); });
+    p1.on("pointerdown",()=>{ selectedPlayer="player1"; this.scene.start("Game"); });
+    p2.on("pointerdown",()=>{ selectedPlayer="player2"; this.scene.start("Game"); });
 
     const back = this.add.text(20,20,"MENU",{...TEXT_STYLE,fontSize:"28px"}).setInteractive();
     back.on("pointerdown",()=>this.scene.start("Menu"));
@@ -65,11 +65,12 @@ class Game extends Phaser.Scene {
     this.load.image("ground","assets/platforms/ground.png");
     this.load.image("platform","assets/platforms/platform_1.png");
     this.load.image("heart","assets/items/heart_v4.png");
+
     this.load.audio("collect","assets/sounds/collect.mp3");
     this.load.audio("jump","assets/sounds/jump.mp3");
 
-    this.load.spritesheet("p1","assets/player/player1/walk.png",{frameWidth:128,frameHeight:128});
-    this.load.spritesheet("p2","assets/player/player2/walk.png",{frameWidth:128,frameHeight:128});
+    this.load.spritesheet("player1","assets/player1/walk.png",{frameWidth:128,frameHeight:128});
+    this.load.spritesheet("player2","assets/player2/walk.png",{frameWidth:128,frameHeight:128});
   }
 
   create(){
@@ -81,7 +82,12 @@ class Game extends Phaser.Scene {
       this.platforms.create(300+i*400,500-(i%2)*100,"platform");
     }
 
-    this.anims.create({ key:"walk", frames:this.anims.generateFrameNumbers(selectedPlayer,{start:0,end:5}), frameRate:8, repeat:-1 });
+    this.anims.create({
+      key:"walk",
+      frames:this.anims.generateFrameNumbers(selectedPlayer,{start:0,end:5}),
+      frameRate:8,
+      repeat:-1
+    });
 
     this.player=this.physics.add.sprite(100,500,selectedPlayer,0);
     this.player.play("walk");
