@@ -12,13 +12,13 @@
                    maximum-scale=1.0,
                    user-scalable=no">
 
-    <!-- CSS -->
-    <link rel="stylesheet" href="style.css">
+    <!-- GOOGLE FONT -->
+    <link href="https://fonts.googleapis.com/css2?family=UnifrakturCook&display=swap" rel="stylesheet">
 
-    <!-- Phaser -->
+    <!-- PHASER -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
 
-    <!-- Telegram SDK -->
+    <!-- TELEGRAM SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
@@ -28,20 +28,17 @@
     // === TELEGRAM MINI APP INIT ===
     if (window.Telegram && Telegram.WebApp) {
         const tg = Telegram.WebApp;
-
         tg.ready();
         tg.expand();
-
-        // Рекомендується Telegram
         tg.disableVerticalSwipes();
         tg.setHeaderColor('#000000');
         tg.setBackgroundColor('#000000');
     }
 
-    // === ЧЕКАЄМО ШРИФТИ ===
+    // === WAIT FOR FONTS THEN LOAD GAME ===
     document.fonts.ready.then(() => {
         const gameScript = document.createElement('script');
-        gameScript.src = 'game.js';
+        gameScript.src = 'main.js'; // ✅ ВИПРАВЛЕНО
         document.body.appendChild(gameScript);
     });
 </script>
