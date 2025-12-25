@@ -1,4 +1,4 @@
-console.log("🎮 Pink Yupik Arcade — FINAL FULL");
+console.log("🎮 Pink Yupik Arcade — FIXED");
 
 if (window.Telegram && Telegram.WebApp) {
   Telegram.WebApp.ready();
@@ -6,7 +6,7 @@ if (window.Telegram && Telegram.WebApp) {
 }
 
 let hearts = 0;
-let selectedCharacter = 'player1';
+let selectedCharacter = null;
 
 // ================= MENU =================
 class MenuScene extends Phaser.Scene {
@@ -16,7 +16,6 @@ class MenuScene extends Phaser.Scene {
     this.load.image('bg_far','assets/backgrounds/bg_far.png');
     this.load.image('bg_mid','assets/backgrounds/bg_mid.png');
     this.load.image('bg_near','assets/backgrounds/bg_near.png');
-    this.load.audio('hover','assets/sounds/hover.mp3');
   }
 
   create(){
@@ -26,15 +25,10 @@ class MenuScene extends Phaser.Scene {
     this.bgMid=this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
     this.bgNear=this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
-    this.soundHover=this.sound.add('hover');
+    this.add.text(width/2,height*0.2,'PINK YUPIK ARCADE',{fontSize:'64px',color:'#fff'}).setOrigin(0.5);
 
-    this.add.text(width/2,height*0.2,'PINK YUPIK',{fontFamily:'UnifrakturCook',fontSize:'64px',color:'#fff'}).setOrigin(0.5);
-
-    const play=this.add.text(width/2,height*0.55,'PLAY',{fontSize:'40px',color:'#00ff99',backgroundColor:'#000a',padding:{x:30,y:15}})
-      .setOrigin(0.5).setInteractive();
-
-    play.on('pointerover',()=>this.soundHover.play());
-    play.on('pointerdown',()=>this.scene.start('Select'));
+    this.add.text(width/2,height*0.55,'PLAY',{fontSize:'40px',color:'#00ff99',backgroundColor:'#000a',padding:{x:30,y:15}})
+      .setOrigin(0.5).setInteractive().on('pointerdown',()=>this.scene.start('Select'));
   }
 
   update(){
@@ -56,20 +50,23 @@ class SelectScene extends Phaser.Scene {
   create(){
     const {width,height}=this.scale;
 
-    this.add.text(width/2,height*0.2,'SELECT',{fontSize:'42px',color:'#fff'}).setOrigin(0.5);
+    this.add.text(width/2,height*0.2,'SELECT CHARACTER',{fontSize:'42px',color:'#fff'}).setOrigin(0.5);
 
-    this.add.image(width/2-150,height/2,'p1').setScale(1.2).setInteractive().on('pointerdown',()=>{selectedCharacter='player1';this.scene.start('Game');});
-    this.add.image(width/2+150,height/2,'p2').setScale(1.2).setInteractive().on('pointerdown',()=>{selectedCharacter='player2';this.scene.start('Game');});
+    this.add.image(width/2-150,height/2,'p1').setScale(1.2).setInteractive()
+      .on('pointerdown',()=>{selectedCharacter='player1';this.scene.start('Game');});
+
+    this.add.image(width/2+150,height/2,'p2').setScale(1.2).setInteractive()
+      .on('pointerdown',()=>{selectedCharacter='player2';this.scene.start('Game');});
   }
 }
 
 // ================= PLAYER =================
 class Player extends Phaser.Physics.Arcade.Sprite {
-  constructor(scene,x,y,idleKey,walkKey){
-    super(scene,x,y,idleKey);
+  constructor(scene,x,y,idle,walk){
+    super(scene,x,y,idle);
     scene.add.existing(this);
     scene.physics.add.existing(this);
-    this.idle=idleKey; this.walk=walkKey;
+    this.idle=idle; this.walk=walk;
     this.setCollideWorldBounds(true);
     this.setDragX(1400);
     this.touch={left:false,right:false,jump:false};
@@ -79,13 +76,10 @@ class Player extends Phaser.Physics.Arcade.Sprite {
     const left=c.left.isDown||this.touch.left;
     const right=c.right.isDown||this.touch.right;
     const jump=Phaser.Input.Keyboard.JustDown(c.up)||this.touch.jump;
-
     if(left){this.setAccelerationX(-900);this.setFlipX(true);}
     else if(right){this.setAccelerationX(900);this.setFlipX(false);}
     else this.setAccelerationX(0);
-
     if(jump && this.body.blocked.down) this.setVelocityY(-520);
-
     this.anims.play(Math.abs(this.body.velocity.x)>5?this.walk:this.idle,true);
     this.touch.jump=false;
   }
@@ -105,9 +99,6 @@ class GameScene extends Phaser.Scene {
     this.load.spritesheet('p1_walk','assets/player1/walk.png',{frameWidth:142,frameHeight:142});
     this.load.image('p2_idle','assets/player2/idle.png');
     this.load.spritesheet('p2_walk','assets/player2/walk.png',{frameWidth:142,frameHeight:142});
-
-    this.load.audio('collect','assets/sounds/collect.mp3');
-    this.load.audio('jump','assets/sounds/jump.mp3');
   }
 
   create(){
@@ -141,10 +132,8 @@ class GameScene extends Phaser.Scene {
     this.hearts=this.physics.add.staticGroup();
     for(let i=0;i<14;i++) this.hearts.create(Phaser.Math.Between(400,3600),Phaser.Math.Between(250,500),'heart');
 
-    this.soundCollect=this.sound.add('collect');
-
     this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
-      h.destroy(); hearts++; this.soundCollect.play(); this.ui.setText(`❤️ ${hearts}`);
+      h.destroy(); hearts++; this.ui.setText(`❤️ ${hearts}`);
     });
 
     this.ui=this.add.text(20,20,'❤️ 0',{fontSize:'28px',color:'#fff'}).setScrollFactor(0);
