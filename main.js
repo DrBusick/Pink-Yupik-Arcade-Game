@@ -1,4 +1,4 @@
-console.log("🎮 Pink Yupik Arcade — FIXED");
+console.log("🎮 Pink Yupik Arcade — FINAL v2");
 
 if (window.Telegram && Telegram.WebApp) {
   Telegram.WebApp.ready();
@@ -11,26 +11,22 @@ let selectedCharacter = null;
 // ================= MENU =================
 class MenuScene extends Phaser.Scene {
   constructor(){ super('Menu'); }
-
   preload(){
     this.load.image('bg_far','assets/backgrounds/bg_far.png');
     this.load.image('bg_mid','assets/backgrounds/bg_mid.png');
     this.load.image('bg_near','assets/backgrounds/bg_near.png');
   }
-
   create(){
     const {width,height}=this.scale;
-
     this.bgFar=this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
     this.bgMid=this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
     this.bgNear=this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
-    this.add.text(width/2,height*0.2,'PINK YUPIK ARCADE',{fontSize:'64px',color:'#fff'}).setOrigin(0.5);
+    this.add.text(width/2,height*0.2,'PINK YUPIK ARCADE',{fontFamily:'UnifrakturCook',fontSize:'64px',color:'#fff'}).setOrigin(0.5);
 
     this.add.text(width/2,height*0.55,'PLAY',{fontSize:'40px',color:'#00ff99',backgroundColor:'#000a',padding:{x:30,y:15}})
       .setOrigin(0.5).setInteractive().on('pointerdown',()=>this.scene.start('Select'));
   }
-
   update(){
     this.bgFar.tilePositionX+=0.1;
     this.bgMid.tilePositionX+=0.25;
@@ -41,20 +37,18 @@ class MenuScene extends Phaser.Scene {
 // ================= SELECT =================
 class SelectScene extends Phaser.Scene {
   constructor(){ super('Select'); }
-
   preload(){
+    this.load.image('bg','assets/backgrounds/bg.png');
     this.load.image('p1','assets/player1/idle.png');
     this.load.image('p2','assets/player2/idle.png');
   }
-
   create(){
     const {width,height}=this.scale;
-
-    this.add.text(width/2,height*0.2,'SELECT CHARACTER',{fontSize:'42px',color:'#fff'}).setOrigin(0.5);
+    this.add.image(0,0,'bg').setOrigin(0).setScrollFactor(0);
+    this.add.text(width/2,height*0.2,'SELECT CHARACTER',{fontFamily:'UnifrakturCook',fontSize:'42px',color:'#fff'}).setOrigin(0.5);
 
     this.add.image(width/2-150,height/2,'p1').setScale(1.2).setInteractive()
       .on('pointerdown',()=>{selectedCharacter='player1';this.scene.start('Game');});
-
     this.add.image(width/2+150,height/2,'p2').setScale(1.2).setInteractive()
       .on('pointerdown',()=>{selectedCharacter='player2';this.scene.start('Game');});
   }
@@ -68,7 +62,9 @@ class Player extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this);
     this.idle=idle; this.walk=walk;
     this.setCollideWorldBounds(true);
-    this.setDragX(1400);
+    this.setDragX(2500);
+    this.setMaxVelocity(250,600);
+    this.maxJumps=3; this.jumpsLeft=3;
     this.touch={left:false,right:false,jump:false};
   }
   update(){
@@ -76,10 +72,15 @@ class Player extends Phaser.Physics.Arcade.Sprite {
     const left=c.left.isDown||this.touch.left;
     const right=c.right.isDown||this.touch.right;
     const jump=Phaser.Input.Keyboard.JustDown(c.up)||this.touch.jump;
-    if(left){this.setAccelerationX(-900);this.setFlipX(true);}
-    else if(right){this.setAccelerationX(900);this.setFlipX(false);}
+
+    if(this.body.blocked.down) this.jumpsLeft=this.maxJumps;
+
+    if(left){ this.setAccelerationX(-400); this.setFlipX(true); }
+    else if(right){ this.setAccelerationX(400); this.setFlipX(false); }
     else this.setAccelerationX(0);
-    if(jump && this.body.blocked.down) this.setVelocityY(-520);
+
+    if(jump && this.jumpsLeft>0){ this.setVelocityY(-520); this.jumpsLeft--; }
+
     this.anims.play(Math.abs(this.body.velocity.x)>5?this.walk:this.idle,true);
     this.touch.jump=false;
   }
@@ -88,7 +89,6 @@ class Player extends Phaser.Physics.Arcade.Sprite {
 // ================= GAME =================
 class GameScene extends Phaser.Scene {
   constructor(){ super('Game'); }
-
   preload(){
     this.load.image('bg','assets/backgrounds/bg.png');
     this.load.image('ground','assets/platforms/ground.png');
@@ -99,12 +99,15 @@ class GameScene extends Phaser.Scene {
     this.load.spritesheet('p1_walk','assets/player1/walk.png',{frameWidth:142,frameHeight:142});
     this.load.image('p2_idle','assets/player2/idle.png');
     this.load.spritesheet('p2_walk','assets/player2/walk.png',{frameWidth:142,frameHeight:142});
+
+    this.load.image('btn_left','assets/ui/btn_left.png');
+    this.load.image('btn_right','assets/ui/btn_right.png');
+    this.load.image('btn_jump','assets/ui/btn_jump.png');
   }
 
   create(){
     hearts=0;
     const {width,height}=this.scale;
-
     this.add.image(0,0,'bg').setOrigin(0).setScrollFactor(0);
 
     this.physics.world.setBounds(0,0,4000,800);
@@ -121,7 +124,7 @@ class GameScene extends Phaser.Scene {
 
     if(!this.anims.exists(idle)){
       this.anims.create({key:idle,frames:[{key:idle}],repeat:-1});
-      this.anims.create({key:walk,frames:this.anims.generateFrameNumbers(walk),frameRate:10,repeat:-1});
+      this.anims.create({key:walk,frames:this.anims.generateFrameNumbers(walk),frameRate:8,repeat:-1});
     }
 
     this.player=new Player(this,200,600,idle,walk);
@@ -132,9 +135,7 @@ class GameScene extends Phaser.Scene {
     this.hearts=this.physics.add.staticGroup();
     for(let i=0;i<14;i++) this.hearts.create(Phaser.Math.Between(400,3600),Phaser.Math.Between(250,500),'heart');
 
-    this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
-      h.destroy(); hearts++; this.ui.setText(`❤️ ${hearts}`);
-    });
+    this.physics.add.overlap(this.player,this.hearts,(p,h)=>{ h.destroy(); hearts++; this.ui.setText(`❤️ ${hearts}`); });
 
     this.ui=this.add.text(20,20,'❤️ 0',{fontSize:'28px',color:'#fff'}).setScrollFactor(0);
 
@@ -142,7 +143,6 @@ class GameScene extends Phaser.Scene {
       .setScrollFactor(0).setInteractive().on('pointerdown',()=>this.scene.start('Menu'));
 
     this.createTouchControls();
-
     this.cameras.main.startFollow(this.player,true,0.1,0.1);
     this.cameras.main.setBounds(0,0,4000,800);
   }
