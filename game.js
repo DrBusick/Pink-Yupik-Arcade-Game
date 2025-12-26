@@ -225,7 +225,11 @@ class Player extends Phaser.Physics.Arcade.Sprite {
 // ======================= GAME SCENE ========================
 class GameScene extends Phaser.Scene
 {
-    constructor()
+    constructor() {
+    super('GameScene');
+    this.selectedPlayer = 'player1';
+}
+
    {
         super('GameScene');
         this.worldWidth = 6000;
@@ -235,15 +239,10 @@ class GameScene extends Phaser.Scene
     }
 
      init(data) {
-    if (data && data.player) {
-        this.selectedPlayer = data.player;
-    } else {
-        this.selectedPlayer = 'player1';
-    }
+    this.selectedPlayer = (data && data.player) ? data.player : 'player1';
 }
-
     
-    preload() {
+preload() {
     const p = this.selectedPlayer;
 
     if (this.textures.exists('idle')) this.textures.remove('idle');
@@ -252,26 +251,24 @@ class GameScene extends Phaser.Scene
     this.load.image('idle', `assets/${p}/idle.png`);
     this.load.spritesheet('walk', `assets/${p}/walk.png`, { frameWidth: 142, frameHeight: 142 });
 
-    // решта preload без змін
+    this.load.image('btn_left',  'assets/ui/btn_left.png');
+    this.load.image('btn_right', 'assets/ui/btn_right.png');
+    this.load.image('btn_jump',  'assets/ui/btn_jump.png');
+    this.load.image('bg','assets/backgrounds/bg.png');
+    this.load.image('ground','assets/platforms/ground.png');
+
+    for (let i=1;i<=4;i++)
+        this.load.image(`pf${i}`,`assets/platforms/platform_${i}.png`);
+
+    this.load.image('heart','assets/items/heart_v4.png');
+
+    this.load.audio('jump','assets/sounds/jump.mp3');
+    this.load.audio('walk','assets/sounds/walk.mp3');
+    this.load.audio('collect','assets/sounds/collect.mp3');
+    this.load.audio('hover','assets/sounds/hover.mp3');
 }
 
-this.load.image('btn_left',  'assets/ui/btn_left.png');
-this.load.image('btn_right', 'assets/ui/btn_right.png');
-this.load.image('btn_jump',  'assets/ui/btn_jump.png');
-        this.load.image('bg','assets/backgrounds/bg.png');
-        this.load.image('ground','assets/platforms/ground.png');
-        for(let i=1;i<=4;i++)
-            this.load.image(`pf${i}`,`assets/platforms/platform_${i}.png`);
-
-        this.load.image('heart','assets/items/heart_v4.png');
-
-        this.load.audio('jump','assets/sounds/jump.mp3');
-        this.load.audio('walk','assets/sounds/walk.mp3');
-        this.load.audio('collect','assets/sounds/collect.mp3');
-this.load.audio('hover', 'assets/sounds/hover.mp3')
-    }
-
-    create() {
+create() {
     if (this.anims.exists('idle')) this.anims.remove('idle');
     if (this.anims.exists('walk')) this.anims.remove('walk');
 
@@ -283,7 +280,12 @@ this.load.audio('hover', 'assets/sounds/hover.mp3')
         repeat: -1
     });
 
+    this.jumpSound = this.sound.add('jump');
+    this.collectSound = this.sound.add('collect');
+    this.hoverSound = this.sound.add('hover', { volume: 0.6 });
+
     this.player = new Player(this, 200, 300);
+
 }
 
 this.jumpSound=this.sound.add('jump');
