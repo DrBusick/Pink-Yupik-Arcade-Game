@@ -1,163 +1,148 @@
-const GAME_WIDTH = 1280;
-const GAME_HEIGHT = 720;
-const LEVEL_LENGTH = GAME_WIDTH * 7;
-let selectedPlayer = 'player1';
+let selectedPlayer = 'player';
 
-/* ===== СЦЕНИ ===== */
-
+// ======================= MENU =======================
 class MenuScene extends Phaser.Scene {
-  constructor(){ super('Menu'); }
+    constructor(){ super('MenuScene'); }
 
-  preload(){
-    this.load.image('bg_far','assets/backgrounds/bg_far.png');
-    this.load.image('bg_mid','assets/backgrounds/bg_mid.png');
-    this.load.image('bg_near','assets/backgrounds/bg_near.png');
-  }
+    preload(){
+        this.load.image('bg_far','assets/backgrounds/bg_far.png');
+        this.load.image('bg_mid','assets/backgrounds/bg_mid.png');
+        this.load.image('bg_near','assets/backgrounds/bg_near.png');
+    }
 
-  create(){
-    this.createParallax();
+    create(){
+        const {width,height}=this.scale;
 
-    this.add.text(640,200,'Pink Yupik Arcade',{
-      fontFamily:'UnifrakturCook',
-      fontSize:'64px',
-      color:'#e0f0ff'
-    }).setOrigin(0.5);
+        this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
+        this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
+        this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
-    const start = this.add.text(640,350,'Start',{
-      fontFamily:'UnifrakturCook',
-      fontSize:'48px',
-      color:'#ffffff'
-    }).setOrigin(0.5).setInteractive();
+        this.add.text(width/2,200,'Pink Yupik Arcade',{
+            fontFamily:'UnifrakturCook',fontSize:'72px',fill:'#e8d9b0'
+        }).setOrigin(0.5);
 
-    start.on('pointerdown',()=>this.scene.start('Character'));
-  }
+        const start=this.add.text(width/2,400,'Start',{
+            fontFamily:'UnifrakturCook',fontSize:'48px',fill:'#ffffff'
+        }).setOrigin(0.5).setInteractive();
 
-  createParallax(){
-    this.add.tileSprite(640,360,1280,720,'bg_far');
-    this.add.tileSprite(640,360,1280,720,'bg_mid');
-    this.add.tileSprite(640,360,1280,720,'bg_near');
-  }
+        start.on('pointerdown',()=>this.scene.start('SelectScene'));
+    }
 }
 
-class CharacterScene extends Phaser.Scene {
-  constructor(){ super('Character'); }
+// ======================= SELECT =======================
+class SelectScene extends Phaser.Scene {
+    constructor(){ super('SelectScene'); }
 
-  preload(){
-    ['bg_far','bg_mid','bg_near'].forEach(k=>this.load.image(k,`assets/backgrounds/${k}.png`));
-    this.load.image('platform','assets/platforms/platform_1.png');
-    this.load.spritesheet('p1','assets/player1/idle.png',{frameWidth:64,frameHeight:64});
-    this.load.spritesheet('p2','assets/player2/idle.png',{frameWidth:64,frameHeight:64});
-  }
+    preload(){
+        this.load.image('bg_far','assets/backgrounds/bg_far.png');
+        this.load.image('bg_mid','assets/backgrounds/bg_mid.png');
+        this.load.image('bg_near','assets/backgrounds/bg_near.png');
 
-  create(){
-    this.createParallax();
+        this.load.image('p1_idle','assets/player/idle.png');
+        this.load.image('p2_idle','assets/player2/idle.png');
+    }
 
-    this.add.text(640,80,'Select Character',{
-      fontFamily:'UnifrakturCook',
-      fontSize:'48px',
-      color:'#e0f0ff'
-    }).setOrigin(0.5);
+    create(){
+        const {width,height}=this.scale;
 
-    const y=480;
-    this.add.image(400,y,'platform').setScale(2);
-    this.add.image(880,y,'platform').setScale(2);
+        this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
+        this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
+        this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
-    const p1=this.add.sprite(400,y-90,'p1').setScale(2).setInteractive();
-    const p2=this.add.sprite(880,y-90,'p2').setScale(2).setInteractive();
+        this.add.text(width/2,120,'Select Character',{
+            fontFamily:'UnifrakturCook',fontSize:'64px',fill:'#e8d9b0'
+        }).setOrigin(0.5);
 
-    p1.on('pointerdown',()=>{selectedPlayer='player1';this.scene.start('Game');});
-    p2.on('pointerdown',()=>{selectedPlayer='player2';this.scene.start('Game');});
-  }
+        const p1=this.add.image(width/2-220,height/2,'p1_idle').setScale(1.2).setInteractive();
+        const p2=this.add.image(width/2+220,height/2,'p2_idle').setScale(1.2).setInteractive();
 
-  createParallax(){
-    this.add.tileSprite(640,360,1280,720,'bg_far');
-    this.add.tileSprite(640,360,1280,720,'bg_mid');
-    this.add.tileSprite(640,360,1280,720,'bg_near');
-  }
+        p1.on('pointerdown',()=>{ selectedPlayer='player'; this.scene.start('GameScene'); });
+        p2.on('pointerdown',()=>{ selectedPlayer='player2'; this.scene.start('GameScene'); });
+    }
 }
 
+// ======================= PLAYER =======================
+class Player extends Phaser.Physics.Arcade.Sprite {
+    constructor(scene,x,y){
+        const prefix = selectedPlayer === 'player2' ? 'p2_' : '';
+        super(scene,x,y,prefix+'idle');
+
+        scene.add.existing(this);
+        scene.physics.add.existing(this);
+
+        this.setCollideWorldBounds(true);
+        this.setBodySize(90,120).setOffset(26,18);
+
+        this.speed=260; this.accel=1200; this.jumpVelocity=520;
+        this.body.setMaxVelocity(this.speed,1000);
+        this.body.setDragX(1000);
+
+        this.facing='right'; this.jumpCount=0; this.maxJumps=3;
+
+        this.keys=scene.input.keyboard.addKeys({left:'A',right:'D',up:'W',left2:'LEFT',right2:'RIGHT',up2:'UP'});
+        this.touchLeft=false; this.touchRight=false; this.touchJump=false;
+
+        this.walkSound=scene.sound.add('walk',{loop:true,volume:0.5});
+    }
+
+    preUpdate(time,delta){
+        super.preUpdate(time,delta);
+        const L=this.keys.left.isDown||this.keys.left2.isDown||this.touchLeft;
+        const R=this.keys.right.isDown||this.keys.right2.isDown||this.touchRight;
+
+        if(L){ this.setAccelerationX(-this.accel); this.facing='left'; }
+        else if(R){ this.setAccelerationX(this.accel); this.facing='right'; }
+        else this.setAccelerationX(0);
+
+        const moving=L||R;
+        const jump = Phaser.Input.Keyboard.JustDown(this.keys.up)||Phaser.Input.Keyboard.JustDown(this.keys.up2)||this.touchJump;
+
+        if(jump && this.jumpCount<this.maxJumps){
+            this.setVelocityY(-this.jumpVelocity);
+            this.jumpCount++;
+            this.scene.jumpSound.play();
+            this.touchJump=false;
+        }
+
+        if(this.body.blocked.down){
+            this.jumpCount=0;
+            if(moving && !this.walkSound.isPlaying) this.walkSound.play();
+            if(!moving && this.walkSound.isPlaying) this.walkSound.stop();
+        }
+
+        this.setFlipX(this.facing==='left');
+        this.anims.play(moving?'walk':'idle',true);
+    }
+}
+
+// ======================= GAME =======================
 class GameScene extends Phaser.Scene {
-  constructor(){ super('Game'); }
+    constructor(){ super('GameScene'); }
 
-  preload(){
-    ['bg_far','bg_mid','bg_near'].forEach(k=>this.load.image(k,`assets/backgrounds/${k}.png`));
-    this.load.image('platform','assets/platforms/platform_1.png');
-    this.load.image('heart','assets/items/heart_v4.png');
-
-    this.load.spritesheet('idle',`assets/${selectedPlayer}/idle.png`,{frameWidth:64,frameHeight:64});
-    this.load.spritesheet('walk',`assets/${selectedPlayer}/walk.png`,{frameWidth:64,frameHeight:64});
-  }
-
-  create(){
-    this.createParallax();
-
-    this.platforms=this.physics.add.group({allowGravity:false,immovable:true});
-
-    for(let i=0;i<25;i++){
-      let p=this.platforms.create(
-        Phaser.Math.Between(200,LEVEL_LENGTH-200),
-        Phaser.Math.Between(250,600),
-        'platform'
-      );
-      if(i<8){
-        this.tweens.add({targets:p,x:p.x+Phaser.Math.Between(-200,200),yoyo:true,repeat:-1,duration:3000});
-      }
+    preload(){
+        const prefix = selectedPlayer === 'player2' ? 'p2_' : '';
+        this.load.spritesheet(prefix+'walk',`assets/${selectedPlayer}/walk.png`,{frameWidth:142,frameHeight:142});
+        this.load.image(prefix+'idle',`assets/${selectedPlayer}/idle.png`);
+        this.load.audio('jump','assets/sounds/jump.mp3');
+        this.load.audio('walk','assets/sounds/walk.mp3');
     }
 
-    this.player=this.physics.add.sprite(100,500,'idle').setScale(1.5).setCollideWorldBounds(true);
-    this.physics.add.collider(this.player,this.platforms);
+    create(){
+        const prefix = selectedPlayer === 'player2' ? 'p2_' : '';
+        this.anims.create({key:'idle',frames:[{key:prefix+'idle'}],repeat:-1});
+        this.anims.create({key:'walk',frames:this.anims.generateFrameNumbers(prefix+'walk'),frameRate:10,repeat:-1});
 
-    this.anims.create({
-      key:'walk',
-      frames:this.anims.generateFrameNumbers('walk'),
-      frameRate:10,
-      repeat:-1
-    });
-
-    this.cameras.main.setBounds(0,0,LEVEL_LENGTH,720);
-
-    this.cursors=this.input.keyboard.createCursorKeys();
-  }
-
-  createParallax(){
-    this.bgFar=this.add.tileSprite(0,360,LEVEL_LENGTH,720,'bg_far').setOrigin(0);
-    this.bgMid=this.add.tileSprite(0,360,LEVEL_LENGTH,720,'bg_mid').setOrigin(0);
-    this.bgNear=this.add.tileSprite(0,360,LEVEL_LENGTH,720,'bg_near').setOrigin(0);
-  }
-
-  update(){
-    const speed=220;
-    if(this.cursors.left.isDown){
-      this.player.setVelocityX(-speed);
-      this.player.anims.play('walk',true);
-    }else if(this.cursors.right.isDown){
-      this.player.setVelocityX(speed);
-      this.player.anims.play('walk',true);
-    }else{
-      this.player.setVelocityX(0);
-      this.player.anims.stop();
+        this.jumpSound=this.sound.add('jump');
+        this.player=new Player(this,200,300);
     }
-
-    if(this.cursors.up.isDown && this.player.body.blocked.down){
-      this.player.setVelocityY(-500);
-    }
-
-    this.cameras.main.scrollX=this.player.x-640;
-    this.bgFar.tilePositionX=this.cameras.main.scrollX*0.2;
-    this.bgMid.tilePositionX=this.cameras.main.scrollX*0.4;
-    this.bgNear.tilePositionX=this.cameras.main.scrollX*0.7;
-  }
 }
 
-/* ===== КОНФІГ ===== */
-
-const config={
-  type:Phaser.AUTO,
-  width:GAME_WIDTH,
-  height:GAME_HEIGHT,
-  physics:{default:'arcade',arcade:{gravity:{y:1200},debug:false}},
-  scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
-  scene:[MenuScene,CharacterScene,GameScene]
-};
-
-new Phaser.Game(config);
+// ======================= CONFIG =======================
+new Phaser.Game({
+    type:Phaser.AUTO,
+    width:1248,
+    height:832,
+    scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
+    physics:{default:'arcade',arcade:{gravity:{y:900},debug:false}},
+    scene:[MenuScene,SelectScene,GameScene]
+});
