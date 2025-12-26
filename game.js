@@ -241,9 +241,8 @@ class GameScene extends Phaser.Scene
     console.log('Selected player:', this.selectedPlayer);
          console.log('Game started with', this.selectedPlayer);
 }
-    }
     
-       preload() {
+    preload() {
     const p = this.selectedPlayer;
 
     if (this.textures.exists('idle')) this.textures.remove('idle');
