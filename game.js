@@ -335,11 +335,12 @@ const btnStyle = { fontFamily: 'UnifrakturCook', fontSize: '40px', fill: '#e8d9b
             glowOff(this.menuButton);
         });
 
-        this.menuButton.on('pointerdown', () => {
+       this.menuButton.on('pointerdown', () => {
     this.hoverSound.play();
+    this.scene.stop('GameScene');
+    this.scene.start('MenuScene');
+});
 
-        this.scene.start('MenuScene');
-        });
 this.input.addPointer(2);
 this.createTouchControls();
     }
@@ -443,12 +444,6 @@ jump.on('pointerup',   () => this.player.touchJump = false);
 jump.on('pointerout',  () => this.player.touchJump = false);
 
 }
-this.menuButton.on('pointerdown', () => {
-    this.hoverSound.play();
-    this.scene.stop('GameScene');
-    this.scene.start('MenuScene');
-});
-
 
     update(){
         this.bg.tilePositionX=this.cameras.main.scrollX;
