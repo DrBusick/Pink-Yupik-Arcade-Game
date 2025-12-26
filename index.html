@@ -1,32 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Pink Yupik Arcade</title>
+  <meta charset="UTF-8">
+  <title>Pink Yupik Arcade</title>
+  <style>
+    body { margin: 0; background: black; }
+    canvas { display: block; margin: 0 auto; }
+  </style>
 
-<style>
-@font-face {
-  font-family: 'UnifrakturCook';
-  src: url('assets/fonts/UnifrakturCook-Regular.ttf');
-}
-
-body {
-  margin: 0;
-  background: black;
-  font-family: 'UnifrakturCook', serif;
-}
-
-canvas {
-  display: block;
-  margin: auto;
-}
-</style>
+  <link rel="preload" href="assets/fonts/UnifrakturCook-Regular.ttf" as="font" type="font/ttf" crossorigin>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
 </head>
 <body>
-
-<script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
-<script src="game.js"></script>
-
+  <script src="game.js"></script>
 </body>
 </html>
