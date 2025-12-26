@@ -78,14 +78,17 @@ class SelectScene extends Phaser.Scene {
     constructor(){ super('SelectScene'); }
 
       preload() {
-        this.load.image('bg_far', 'assets/backgrounds/bg_far.png');
-        this.load.image('bg_mid', 'assets/backgrounds/bg_mid.png');
-        this.load.image('bg_near', 'assets/backgrounds/bg_near.png');
-        this.load.audio('hover', 'assets/sounds/hover.mp3');
+    this.load.image('bg_far', 'assets/backgrounds/bg_far.png');
+    this.load.image('bg_mid', 'assets/backgrounds/bg_mid.png');
+    this.load.image('bg_near', 'assets/backgrounds/bg_near.png');
+    this.load.audio('hover', 'assets/sounds/hover.mp3');
 
-        this.load.image('p1_idle','assets/player1/idle.png');
-        this.load.image('p2_idle','assets/player2/idle.png');
-    }
+    this.load.image('p1_idle','assets/player1/idle.png');
+    this.load.image('p2_idle','assets/player2/idle.png');
+
+    this.load.image('select_platform','assets/platforms/platform_1.png');
+}
+
 
     create(){
         const {width,height}=this.scale;
@@ -98,8 +101,19 @@ class SelectScene extends Phaser.Scene {
             fontFamily:'UnifrakturCook',fontSize:'64px',fill:'#e8d9b0'
         }).setOrigin(0.5);
 
-        const p1=this.add.image(width/2-220,height/2,'p1_idle').setScale(1.2).setInteractive();
-        const p2=this.add.image(width/2+220,height/2,'p2_idle').setScale(1.2).setInteractive();
+       const baseY = height / 2 + 90;
+
+const plat1 = this.add.image(width/2 - 220, baseY, 'select_platform').setScale(1.1);
+const plat2 = this.add.image(width/2 + 220, baseY, 'select_platform').setScale(1.1);
+
+const p1 = this.add.image(width/2 - 220, baseY - 110, 'p1_idle')
+    .setScale(1.2)
+    .setInteractive({ useHandCursor: true });
+
+const p2 = this.add.image(width/2 + 220, baseY - 110, 'p2_idle')
+    .setScale(1.2)
+    .setInteractive({ useHandCursor: true });
+
 
        p1.on('pointerdown', () => {
     selectedPlayer = 'player1';
