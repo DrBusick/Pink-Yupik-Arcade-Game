@@ -115,12 +115,10 @@ const p2 = this.add.image(width/2 + 220, baseY - 110, 'p2_idle')
     .setInteractive({ useHandCursor: true });
 
 p1.on('pointerdown', () => {
-    this.scene.stop('GameScene');
     this.scene.start('GameScene', { player: 'player1' });
 });
 
 p2.on('pointerdown', () => {
-    this.scene.stop('GameScene');
     this.scene.start('GameScene', { player: 'player2' });
 });
 
@@ -237,9 +235,11 @@ class GameScene extends Phaser.Scene
     }
 
      init(data) {
-    this.selectedPlayer = data?.player || 'player1';
-    console.log('Selected player:', this.selectedPlayer);
-         console.log('Game started with', this.selectedPlayer);
+    if (data && data.player) {
+        this.selectedPlayer = data.player;
+    } else {
+        this.selectedPlayer = 'player1';
+    }
 }
 
     
