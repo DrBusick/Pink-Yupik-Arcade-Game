@@ -255,7 +255,6 @@ class GameScene extends Phaser.Scene
     // решта preload без змін
 }
 
-   
 this.load.image('btn_left',  'assets/ui/btn_left.png');
 this.load.image('btn_right', 'assets/ui/btn_right.png');
 this.load.image('btn_jump',  'assets/ui/btn_jump.png');
