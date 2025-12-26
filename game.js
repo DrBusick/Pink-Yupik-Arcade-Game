@@ -335,8 +335,7 @@ const btnStyle = { fontFamily: 'UnifrakturCook', fontSize: '40px', fill: '#e8d9b
         this.menuButton.on('pointerdown', () => {
     this.hoverSound.play();
 
-    this.scene.stop('GameScene');
-    this.scene.start('MenuScene');
+        this.scene.start('MenuScene');
         });
 this.input.addPointer(2);
 this.createTouchControls();
