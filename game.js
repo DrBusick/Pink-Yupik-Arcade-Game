@@ -1,4 +1,4 @@
-let selectedPlayer = 'player';
+let selectedPlayer = 'player1';
 
 // ======================= MENU SCENE ========================
 let tg = null;
