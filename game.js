@@ -241,8 +241,10 @@ class GameScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.spritesheet('walk', `assets/${this.selectedPlayer}/walk.png`, { frameWidth: 142, frameHeight: 142 });
-        this.load.image('idle', `assets/${this.selectedPlayer}/idle.png`);
+       const prefix = this.selectedPlayer;
+
+this.load.spritesheet(`${prefix}_walk`, `assets/${prefix}/walk.png`, { frameWidth: 142, frameHeight: 142 });
+this.load.image(`${prefix}_idle`, `assets/${prefix}/idle.png`);
    
 this.load.image('btn_left',  'assets/ui/btn_left.png');
 this.load.image('btn_right', 'assets/ui/btn_right.png');
@@ -261,8 +263,16 @@ this.load.audio('hover', 'assets/sounds/hover.mp3')
     }
 
     create(){
-        this.anims.create({key:'idle',frames:[{key:'idle'}],repeat:-1});
-        this.anims.create({key:'walk',frames:this.anims.generateFrameNumbers('walk'),frameRate:10,repeat:-1});
+        const prefix = this.selectedPlayer;
+
+this.anims.create({ key:'idle', frames:[{ key: `${prefix}_idle` }], repeat:-1 });
+this.anims.create({
+    key:'walk',
+    frames:this.anims.generateFrameNumbers(`${prefix}_walk`),
+    frameRate:10,
+    repeat:-1
+});
+
 
         this.jumpSound=this.sound.add('jump');
         this.collectSound=this.sound.add('collect');
