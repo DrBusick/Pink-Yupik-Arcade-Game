@@ -101,11 +101,18 @@ class SelectScene extends Phaser.Scene {
         const p1=this.add.image(width/2-220,height/2,'p1_idle').setScale(1.2).setInteractive();
         const p2=this.add.image(width/2+220,height/2,'p2_idle').setScale(1.2).setInteractive();
 
-        p1.on('pointerdown',()=>{ selectedPlayer='player1'; this.scene.stop('GameScene');
-        this.scene.start('GameScene');
+       p1.on('pointerdown', () => {
+    selectedPlayer = 'player1';
+    this.scene.stop('GameScene');
+    this.scene.start('GameScene');
+});
 
-        p2.on('pointerdown',()=>{ selectedPlayer='player2'; this.scene.stop('GameScene');
-        this.scene.start('GameScene');
+p2.on('pointerdown', () => {
+    selectedPlayer = 'player2';
+    this.scene.stop('GameScene');
+    this.scene.start('GameScene');
+});
+
 
     }
 }
