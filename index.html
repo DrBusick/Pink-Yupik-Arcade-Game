@@ -1,19 +1,36 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8">
-  <title>Pink Yupik Arcade</title>
+    <meta charset="utf-8" />
+    <title>Pink Yupik Arcade</title>
 
-  <link rel="preload" href="assets/fonts/UnifrakturCook-Regular.ttf" as="font" type="font/ttf" crossorigin>
+    <meta name="viewport"
+          content="width=device-width,
+                   height=device-height,
+                   initial-scale=1.0,
+                   maximum-scale=1.0,
+                   user-scalable=no">
 
-  <style>
-    body { margin: 0; background: black; overflow: hidden; }
-    canvas { display: block; margin: 0 auto; }
-  </style>
-
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
+
 <body>
-  <script src="game.js"></script>
+<script>
+if (window.Telegram && Telegram.WebApp) {
+    const tg = Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+    tg.disableVerticalSwipes();
+    tg.setHeaderColor('#000000');
+    tg.setBackgroundColor('#000000');
+}
+
+document.fonts.ready.then(() => {
+    const s = document.createElement('script');
+    s.src = 'game.js';
+    document.body.appendChild(s);
+});
+</script>
 </body>
 </html>
