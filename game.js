@@ -64,25 +64,46 @@ class CharacterScene extends Phaser.Scene {
     this.load.image('bg_far', 'assets/backgrounds/bg_far.png');
     this.load.image('bg_mid', 'assets/backgrounds/bg_mid.png');
     this.load.image('bg_near', 'assets/backgrounds/bg_near.png');
+    this.load.image('platform', 'assets/platforms/platform_1.png');
 
-    this.load.spritesheet('p1_idle', 'assets/player1/idle.png', { frameWidth: 64, frameHeight: 64 });
-    this.load.spritesheet('p2_idle', 'assets/player2/idle.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('p1_idle', 'assets/player1/idle.png', { frameWidth:64, frameHeight:64 });
+    this.load.spritesheet('p2_idle', 'assets/player2/idle.png', { frameWidth:64, frameHeight:64 });
   }
 
   create() {
     this.createParallax();
 
-    this.add.text(640, 100, 'Select Character', {
+    this.add.text(640, 80, 'Select Character', {
       fontFamily: 'UnifrakturCook',
       fontSize: '48px',
-      color: '#ffffff'
+      color: '#d0f0ff'
     }).setOrigin(0.5);
 
-    const p1 = this.add.sprite(400, 360, 'p1_idle', 0).setScale(2).setInteractive();
-    const p2 = this.add.sprite(880, 360, 'p2_idle', 0).setScale(2).setInteractive();
+    // Платформи під персонажами
+    const platformY = 500;
+    this.add.image(400, platformY, 'platform').setScale(2);
+    this.add.image(880, platformY, 'platform').setScale(2);
 
-    p1.on('pointerdown', () => { selectedPlayer = 'player1'; this.scene.start('Game'); });
-    p2.on('pointerdown', () => { selectedPlayer = 'player2'; this.scene.start('Game'); });
+    const p1 = this.add.sprite(400, platformY - 90, 'p1_idle', 0).setScale(2);
+    const p2 = this.add.sprite(880, platformY - 90, 'p2_idle', 0).setScale(2);
+
+    p1.setInteractive();
+    p2.setInteractive();
+
+    [p1, p2].forEach(p => {
+      p.on('pointerover', () => p.setTint(0xffdddd));
+      p.on('pointerout', () => p.clearTint());
+    });
+
+    p1.on('pointerdown', () => {
+      selectedPlayer = 'player1';
+      this.scene.start('Game');
+    });
+
+    p2.on('pointerdown', () => {
+      selectedPlayer = 'player2';
+      this.scene.start('Game');
+    });
   }
 
   createParallax() {
