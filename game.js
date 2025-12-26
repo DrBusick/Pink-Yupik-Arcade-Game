@@ -114,17 +114,14 @@ const p2 = this.add.image(width/2 + 220, baseY - 110, 'p2_idle')
     .setScale(1.2)
     .setInteractive({ useHandCursor: true });
 
-
-      p1.on('pointerdown', () => {
+p1.on('pointerdown', () => {
     this.scene.stop('GameScene');
-this.scene.start('GameScene', { player: 'player1' });
-
+    this.scene.start('GameScene', { player: 'player1' });
 });
 
 p2.on('pointerdown', () => {
     this.scene.stop('GameScene');
-this.scene.start('GameScene', { player: 'player2' });
-
+    this.scene.start('GameScene', { player: 'player2' });
 });
 
     }
@@ -229,20 +226,24 @@ class Player extends Phaser.Physics.Arcade.Sprite {
 
 // ======================= GAME SCENE ========================
 class GameScene extends Phaser.Scene {
-    constructor()
-    init(data) {
-    this.selectedPlayer = data.player || 'player1';
-}
-{
+    constructor() {
         super('GameScene');
-        this.worldWidth=6000;
-        this.worldHeight=832;
-        this.heartsCollected=0;
+        this.worldWidth = 6000;
+        this.worldHeight = 832;
+        this.heartsCollected = 0;
+        this.selectedPlayer = 'player1';
     }
 
-    preload(){
-        this.load.spritesheet('walk', `assets/${selectedPlayer}/walk.png`, { frameWidth: 142, frameHeight: 142 });
-        this.load.image('idle', `assets/${selectedPlayer}/idle.png`);
+    init(data) {
+        if (data && data.player) {
+            this.selectedPlayer = data.player;
+        }
+    }
+
+    preload() {
+        this.load.spritesheet('walk', `assets/${this.selectedPlayer}/walk.png`, { frameWidth: 142, frameHeight: 142 });
+        this.load.image('idle', `assets/${this.selectedPlayer}/idle.png`);
+   
 this.load.image('btn_left',  'assets/ui/btn_left.png');
 this.load.image('btn_right', 'assets/ui/btn_right.png');
 this.load.image('btn_jump',  'assets/ui/btn_jump.png');
@@ -442,6 +443,11 @@ jump.on('pointerup',   () => this.player.touchJump = false);
 jump.on('pointerout',  () => this.player.touchJump = false);
 
 }
+this.menuButton.on('pointerdown', () => {
+    this.hoverSound.play();
+    this.scene.stop('GameScene');
+    this.scene.start('MenuScene');
+});
 
 
     update(){
