@@ -57,7 +57,7 @@ class MenuScene extends Phaser.Scene {
 
         play.on('pointerover', () => { this.hoverSound.play(); play.setScale(1.15); glowOn(play); });
         play.on('pointerout', () => { play.setScale(1); glowOff(play); });
-        play.on('pointerdown', () => { this.hoverSound.play(); this.scene.start('GameScene'); });
+        play.on('pointerdown', () => { this.hoverSound.play(); this.scene.start('SelectScene'); });
 
         const exit = this.add.text(width/2, height/2 + 100, 'EXIT', btnStyle)
             .setOrigin(0.5).setInteractive({ useHandCursor:true });
@@ -221,8 +221,8 @@ this.load.image('btn_jump',  'assets/ui/btn_jump.png');
         for(let i=1;i<=4;i++)
             this.load.image(`pf${i}`,`assets/platforms/platform_${i}.png`);
 
-        this.load.spritesheet('walk','assets/player/walk.png',{frameWidth:142,frameHeight:142});
-        this.load.image('idle','assets/player/idle.png');
+        this.load.spritesheet('walk', `assets/${selectedPlayer}/walk.png`, { frameWidth: 142, frameHeight: 142 });
+        this.load.image('idle', `assets/${selectedPlayer}/idle.png`);
         this.load.image('heart','assets/items/heart_v4.png');
 
         this.load.audio('jump','assets/sounds/jump.mp3');
