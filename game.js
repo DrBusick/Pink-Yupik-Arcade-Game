@@ -115,18 +115,13 @@ const p2 = this.add.image(width/2 + 220, baseY - 110, 'p2_idle')
     .setInteractive({ useHandCursor: true });
 
 
-       p1.on('pointerdown', () => {
-    selectedPlayer = 'player1';
-    this.scene.stop('GameScene');
-    this.scene.start('GameScene');
+      p1.on('pointerdown', () => {
+    this.scene.start('GameScene', { player: 'player1' });
 });
 
 p2.on('pointerdown', () => {
-    selectedPlayer = 'player2';
-    this.scene.stop('GameScene');
-    this.scene.start('GameScene');
+    this.scene.start('GameScene', { player: 'player2' });
 });
-
 
     }
 }
@@ -230,7 +225,11 @@ class Player extends Phaser.Physics.Arcade.Sprite {
 
 // ======================= GAME SCENE ========================
 class GameScene extends Phaser.Scene {
-    constructor(){
+    constructor()
+    init(data) {
+    this.selectedPlayer = data.player || 'player1';
+}
+{
         super('GameScene');
         this.worldWidth=6000;
         this.worldHeight=832;
