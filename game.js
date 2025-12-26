@@ -77,10 +77,11 @@ class MenuScene extends Phaser.Scene {
 class SelectScene extends Phaser.Scene {
     constructor(){ super('SelectScene'); }
 
-    preload(){
-        this.load.image('bg_far','assets/backgrounds/bg_far.png');
-        this.load.image('bg_mid','assets/backgrounds/bg_mid.png');
-        this.load.image('bg_near','assets/backgrounds/bg_near.png');
+      preload() {
+        this.load.image('bg_far', 'assets/backgrounds/bg_far.png');
+        this.load.image('bg_mid', 'assets/backgrounds/bg_mid.png');
+        this.load.image('bg_near', 'assets/backgrounds/bg_near.png');
+        this.load.audio('hover', 'assets/sounds/hover.mp3');
 
         this.load.image('p1_idle','assets/player1/idle.png');
         this.load.image('p2_idle','assets/player2/idle.png');
@@ -100,7 +101,7 @@ class SelectScene extends Phaser.Scene {
         const p1=this.add.image(width/2-220,height/2,'p1_idle').setScale(1.2).setInteractive();
         const p2=this.add.image(width/2+220,height/2,'p2_idle').setScale(1.2).setInteractive();
 
-        p1.on('pointerdown',()=>{ selectedPlayer='player'; this.scene.start('GameScene'); });
+        p1.on('pointerdown',()=>{ selectedPlayer='player1'; this.scene.start('GameScene'); });
         p2.on('pointerdown',()=>{ selectedPlayer='player2'; this.scene.start('GameScene'); });
     }
 }
