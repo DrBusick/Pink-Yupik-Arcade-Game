@@ -225,7 +225,8 @@ class Player extends Phaser.Physics.Arcade.Sprite {
 
 
 // ======================= GAME SCENE ========================
-class GameScene extends Phaser.Scene {
+class GameScene extends Phaser.Scene
+{
     constructor()
    {
         super('GameScene');
@@ -238,6 +239,7 @@ class GameScene extends Phaser.Scene {
      init(data) {
     this.selectedPlayer = data?.player || 'player1';
     console.log('Selected player:', this.selectedPlayer);
+         console.log('Game started with', this.selectedPlayer);
 }
     }
     
