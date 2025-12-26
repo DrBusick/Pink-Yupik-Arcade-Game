@@ -115,10 +115,12 @@ const p2 = this.add.image(width/2 + 220, baseY - 110, 'p2_idle')
     .setInteractive({ useHandCursor: true });
 
 p1.on('pointerdown', () => {
+    this.scene.stop('GameScene');
     this.scene.start('GameScene', { player: 'player1' });
 });
 
 p2.on('pointerdown', () => {
+    this.scene.stop('GameScene');
     this.scene.start('GameScene', { player: 'player2' });
 });
 
@@ -223,14 +225,8 @@ class Player extends Phaser.Physics.Arcade.Sprite {
 
 
 // ======================= GAME SCENE ========================
-class GameScene extends Phaser.Scene
-{
+class GameScene extends Phaser.Scene {
     constructor() {
-    super('GameScene');
-    this.selectedPlayer = 'player1';
-}
-
-   {
         super('GameScene');
         this.worldWidth = 6000;
         this.worldHeight = 832;
@@ -238,57 +234,47 @@ class GameScene extends Phaser.Scene
         this.selectedPlayer = 'player1';
     }
 
-     init(data) {
-    this.selectedPlayer = (data && data.player) ? data.player : 'player1';
-}
-    
-preload() {
-    const p = this.selectedPlayer;
+    init(data) {
+        if (data && data.player) {
+            this.selectedPlayer = data.player;
+        }
+    }
 
-    if (this.textures.exists('idle')) this.textures.remove('idle');
-    if (this.textures.exists('walk')) this.textures.remove('walk');
+    preload() {
+       const prefix = this.selectedPlayer;
 
-    this.load.image('idle', `assets/${p}/idle.png`);
-    this.load.spritesheet('walk', `assets/${p}/walk.png`, { frameWidth: 142, frameHeight: 142 });
+this.load.spritesheet(`${prefix}_walk`, `assets/${prefix}/walk.png`, { frameWidth: 142, frameHeight: 142 });
+this.load.image(`${prefix}_idle`, `assets/${prefix}/idle.png`);
+   
+this.load.image('btn_left',  'assets/ui/btn_left.png');
+this.load.image('btn_right', 'assets/ui/btn_right.png');
+this.load.image('btn_jump',  'assets/ui/btn_jump.png');
+        this.load.image('bg','assets/backgrounds/bg.png');
+        this.load.image('ground','assets/platforms/ground.png');
+        for(let i=1;i<=4;i++)
+            this.load.image(`pf${i}`,`assets/platforms/platform_${i}.png`);
 
-    this.load.image('btn_left',  'assets/ui/btn_left.png');
-    this.load.image('btn_right', 'assets/ui/btn_right.png');
-    this.load.image('btn_jump',  'assets/ui/btn_jump.png');
-    this.load.image('bg','assets/backgrounds/bg.png');
-    this.load.image('ground','assets/platforms/ground.png');
+        this.load.image('heart','assets/items/heart_v4.png');
 
-    for (let i=1;i<=4;i++)
-        this.load.image(`pf${i}`,`assets/platforms/platform_${i}.png`);
+        this.load.audio('jump','assets/sounds/jump.mp3');
+        this.load.audio('walk','assets/sounds/walk.mp3');
+        this.load.audio('collect','assets/sounds/collect.mp3');
+this.load.audio('hover', 'assets/sounds/hover.mp3')
+    }
 
-    this.load.image('heart','assets/items/heart_v4.png');
+    create(){
+        const prefix = this.selectedPlayer;
 
-    this.load.audio('jump','assets/sounds/jump.mp3');
-    this.load.audio('walk','assets/sounds/walk.mp3');
-    this.load.audio('collect','assets/sounds/collect.mp3');
-    this.load.audio('hover','assets/sounds/hover.mp3');
-}
+this.anims.create({ key:'idle', frames:[{ key: `${prefix}_idle` }], repeat:-1 });
+this.anims.create({
+    key:'walk',
+    frames:this.anims.generateFrameNumbers(`${prefix}_walk`),
+    frameRate:10,
+    repeat:-1
+});
 
-create() {
-    if (this.anims.exists('idle')) this.anims.remove('idle');
-    if (this.anims.exists('walk')) this.anims.remove('walk');
 
-    this.anims.create({ key: 'idle', frames: [{ key: 'idle' }], repeat: -1 });
-    this.anims.create({
-        key: 'walk',
-        frames: this.anims.generateFrameNumbers('walk'),
-        frameRate: 10,
-        repeat: -1
-    });
-
-    this.jumpSound = this.sound.add('jump');
-    this.collectSound = this.sound.add('collect');
-    this.hoverSound = this.sound.add('hover', { volume: 0.6 });
-
-    this.player = new Player(this, 200, 300);
-
-}
-
-this.jumpSound=this.sound.add('jump');
+        this.jumpSound=this.sound.add('jump');
         this.collectSound=this.sound.add('collect');
 this.hoverSound = this.sound.add('hover', { volume: 0.6 });
 
