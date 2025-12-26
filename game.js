@@ -219,6 +219,8 @@ class GameScene extends Phaser.Scene {
     preload(){
         this.textures.remove('idle');
         this.textures.remove('walk');
+        this.load.spritesheet('walk', `assets/${selectedPlayer}/walk.png`, { frameWidth: 142, frameHeight: 142 });
+        this.load.image('idle', `assets/${selectedPlayer}/idle.png`);
 this.load.image('btn_left',  'assets/ui/btn_left.png');
 this.load.image('btn_right', 'assets/ui/btn_right.png');
 this.load.image('btn_jump',  'assets/ui/btn_jump.png');
@@ -227,8 +229,6 @@ this.load.image('btn_jump',  'assets/ui/btn_jump.png');
         for(let i=1;i<=4;i++)
             this.load.image(`pf${i}`,`assets/platforms/platform_${i}.png`);
 
-        this.load.spritesheet('walk', `assets/${selectedPlayer}/walk.png`, { frameWidth: 142, frameHeight: 142 });
-        this.load.image('idle', `assets/${selectedPlayer}/idle.png`);
         this.load.image('heart','assets/items/heart_v4.png');
 
         this.load.audio('jump','assets/sounds/jump.mp3');
