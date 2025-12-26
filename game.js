@@ -4,23 +4,6 @@ const LEVEL_LENGTH = GAME_WIDTH * 7;
 
 let selectedPlayer = 'player1';
 
-const config = {
-  type: Phaser.AUTO,
-  width: GAME_WIDTH,
-  height: GAME_HEIGHT,
-  physics: {
-    default: 'arcade',
-    arcade: { gravity: { y: 1200 }, debug: false }
-  },
-  scene: [MenuScene, CharacterScene, GameScene],
-  scale: {
-    mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH
-  }
-};
-
-new Phaser.Game(config);
-
 /* ================= MENU ================= */
 
 class MenuScene extends Phaser.Scene {
@@ -36,12 +19,8 @@ class MenuScene extends Phaser.Scene {
     const title = this.add.text(640, 200, 'Pink Yupik Arcade', {
       fontFamily: 'UnifrakturCook',
       fontSize: '64px',
-      color: '#d0f0ff'
+      color: '#cfe9ff'
     }).setOrigin(0.5);
-
-    title.setInteractive()
-      .on('pointerover', () => title.setTint(0xffcccc))
-      .on('pointerout', () => title.clearTint());
 
     const start = this.add.text(640, 350, 'Start', {
       fontFamily: 'UnifrakturCook',
@@ -67,7 +46,6 @@ class CharacterScene extends Phaser.Scene {
   preload() {
     ['bg_far','bg_mid','bg_near'].forEach(k => this.load.image(k, `assets/backgrounds/${k}.png`));
     this.load.image('platform', 'assets/platforms/platform_1.png');
-
     this.load.spritesheet('p1_idle', 'assets/player1/idle.png', { frameWidth:64, frameHeight:64 });
     this.load.spritesheet('p2_idle', 'assets/player2/idle.png', { frameWidth:64, frameHeight:64 });
   }
@@ -88,11 +66,6 @@ class CharacterScene extends Phaser.Scene {
     const p1 = this.add.sprite(400, y - 90, 'p1_idle').setScale(2).setInteractive();
     const p2 = this.add.sprite(880, y - 90, 'p2_idle').setScale(2).setInteractive();
 
-    [p1,p2].forEach(p => {
-      p.on('pointerover', () => p.setTint(0xffdddd));
-      p.on('pointerout', () => p.clearTint());
-    });
-
     p1.on('pointerdown', () => { selectedPlayer='player1'; this.scene.start('Game'); });
     p2.on('pointerdown', () => { selectedPlayer='player2'; this.scene.start('Game'); });
   }
@@ -111,14 +84,13 @@ class GameScene extends Phaser.Scene {
 
   preload(){
     ['bg_far','bg_mid','bg_near'].forEach(k => this.load.image(k, `assets/backgrounds/${k}.png`));
-    this.load.image('ground','assets/platforms/ground.png');
     this.load.image('platform','assets/platforms/platform_1.png');
     this.load.image('heart','assets/items/heart_v4.png');
 
     this.load.spritesheet('player_idle', `assets/${selectedPlayer}/idle.png`, { frameWidth:64, frameHeight:64 });
     this.load.spritesheet('player_walk', `assets/${selectedPlayer}/walk.png`, { frameWidth:64, frameHeight:64 });
 
-    ['collect','jump','walk'].forEach(s => this.load.audio(s, `assets/sounds/${s}.mp3`));
+    ['collect','jump'].forEach(s => this.load.audio(s, `assets/sounds/${s}.mp3`));
   }
 
   create(){
@@ -130,7 +102,6 @@ class GameScene extends Phaser.Scene {
     }
 
     this.player = this.physics.add.sprite(100,500,'player_idle').setScale(1.5);
-    this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player,this.platforms);
 
     this.anims.create({ key:'walk', frames:this.anims.generateFrameNumbers('player_walk'), frameRate:10, repeat:-1 });
@@ -144,7 +115,8 @@ class GameScene extends Phaser.Scene {
     this.counter = this.add.text(20,20,'0/20',{fontFamily:'UnifrakturCook',fontSize:'32px',color:'#cfe9ff'}).setScrollFactor(0);
 
     this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
-      h.destroy(); this.sound.play('collect');
+      h.destroy();
+      this.sound.play('collect');
       this.collected++;
       this.counter.setText(`${this.collected}/20`);
       if(this.collected===20){
@@ -184,3 +156,19 @@ class GameScene extends Phaser.Scene {
     this.cameras.main.scrollX = Phaser.Math.Clamp(this.player.x-640,0,LEVEL_LENGTH-1280);
   }
 }
+
+/* ================= INIT ================= */
+
+const config = {
+  type: Phaser.AUTO,
+  width: GAME_WIDTH,
+  height: GAME_HEIGHT,
+  physics: {
+    default: 'arcade',
+    arcade: { gravity: { y: 1200 }, debug: false }
+  },
+  scene: [MenuScene, CharacterScene, GameScene],
+  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH }
+};
+
+new Phaser.Game(config);
