@@ -226,7 +226,8 @@ class Player extends Phaser.Physics.Arcade.Sprite {
 
 // ======================= GAME SCENE ========================
 class GameScene extends Phaser.Scene {
-    constructor() {
+    constructor()
+   {
         super('GameScene');
         this.worldWidth = 6000;
         this.worldHeight = 832;
@@ -234,17 +235,24 @@ class GameScene extends Phaser.Scene {
         this.selectedPlayer = 'player1';
     }
 
-    init(data) {
-        if (data && data.player) {
-            this.selectedPlayer = data.player;
-        }
+     init(data) {
+    this.selectedPlayer = data?.player || 'player1';
+    console.log('Selected player:', this.selectedPlayer);
+}
     }
+    
+       preload() {
+    const p = this.selectedPlayer;
 
-    preload() {
-       const prefix = this.selectedPlayer;
+    if (this.textures.exists('idle')) this.textures.remove('idle');
+    if (this.textures.exists('walk')) this.textures.remove('walk');
 
-this.load.spritesheet(`${prefix}_walk`, `assets/${prefix}/walk.png`, { frameWidth: 142, frameHeight: 142 });
-this.load.image(`${prefix}_idle`, `assets/${prefix}/idle.png`);
+    this.load.image('idle', `assets/${p}/idle.png`);
+    this.load.spritesheet('walk', `assets/${p}/walk.png`, { frameWidth: 142, frameHeight: 142 });
+
+    // решта preload без змін
+}
+
    
 this.load.image('btn_left',  'assets/ui/btn_left.png');
 this.load.image('btn_right', 'assets/ui/btn_right.png');
@@ -262,19 +270,22 @@ this.load.image('btn_jump',  'assets/ui/btn_jump.png');
 this.load.audio('hover', 'assets/sounds/hover.mp3')
     }
 
-    create(){
-        const prefix = this.selectedPlayer;
+    create() {
+    if (this.anims.exists('idle')) this.anims.remove('idle');
+    if (this.anims.exists('walk')) this.anims.remove('walk');
 
-this.anims.create({ key:'idle', frames:[{ key: `${prefix}_idle` }], repeat:-1 });
-this.anims.create({
-    key:'walk',
-    frames:this.anims.generateFrameNumbers(`${prefix}_walk`),
-    frameRate:10,
-    repeat:-1
-});
+    this.anims.create({ key: 'idle', frames: [{ key: 'idle' }], repeat: -1 });
+    this.anims.create({
+        key: 'walk',
+        frames: this.anims.generateFrameNumbers('walk'),
+        frameRate: 10,
+        repeat: -1
+    });
 
+    this.player = new Player(this, 200, 300);
+}
 
-        this.jumpSound=this.sound.add('jump');
+this.jumpSound=this.sound.add('jump');
         this.collectSound=this.sound.add('collect');
 this.hoverSound = this.sound.add('hover', { volume: 0.6 });
 
