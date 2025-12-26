@@ -116,11 +116,15 @@ const p2 = this.add.image(width/2 + 220, baseY - 110, 'p2_idle')
 
 
       p1.on('pointerdown', () => {
-    this.scene.start('GameScene', { player: 'player1' });
+    this.scene.stop('GameScene');
+this.scene.start('GameScene', { player: 'player1' });
+
 });
 
 p2.on('pointerdown', () => {
-    this.scene.start('GameScene', { player: 'player2' });
+    this.scene.stop('GameScene');
+this.scene.start('GameScene', { player: 'player2' });
+
 });
 
     }
@@ -237,8 +241,6 @@ class GameScene extends Phaser.Scene {
     }
 
     preload(){
-        this.textures.remove('idle');
-        this.textures.remove('walk');
         this.load.spritesheet('walk', `assets/${selectedPlayer}/walk.png`, { frameWidth: 142, frameHeight: 142 });
         this.load.image('idle', `assets/${selectedPlayer}/idle.png`);
 this.load.image('btn_left',  'assets/ui/btn_left.png');
