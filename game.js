@@ -157,7 +157,7 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         else if(r) this.setFlipX(false);
 
         if(Math.abs(this.body.velocity.x)>5){
-            this.anims.play(`${this.scene.selectedPlayer}_walk`,true);
+            this.anims.play('walk',true);
             if(!this.walkSound) this.walkSound=this.scene.sound.add('walk',{loop:true,volume:0.2});
             if(!this.walkSound.isPlaying) this.walkSound.play();
         } else {
@@ -182,23 +182,20 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     die(){
         if(this.isDead) return;
-        this.isDead = true;
-        this.disableBody(true, true);
-        console.log('Enemy died!');
+        this.isDead=true;
+        this.disableBody(true,true);
 
-        const h = this.scene.physics.add.image(this.x, this.y-20, 'heart_small')
-            .setScale(0.6)
-            .setBounce(0.6)
+        // випадає маленьке серце
+        const h = this.scene.physics.add.image(this.x,this.y-20,'heart_small')
+            .setScale(0.4).setBounce(0.4)
             .setVelocity(Phaser.Math.Between(-80,80),-260)
             .setCollideWorldBounds(true);
-
-        this.scene.physics.add.collider(h, this.scene.ground);
-        this.scene.physics.add.collider(h, this.scene.platforms);
-        this.scene.physics.add.collider(h, this.scene.movingPlatforms);
-
-        this.scene.physics.add.overlap(this.scene.player, h, ()=>{
+        this.scene.physics.add.collider(h,this.scene.ground);
+        this.scene.physics.add.collider(h,this.scene.platforms);
+        this.scene.physics.add.collider(h,this.scene.movingPlatforms);
+        this.scene.physics.add.overlap(this.scene.player,h,()=>{
             h.destroy();
-            this.scene.hp = Math.min(this.scene.hp+1, this.scene.maxHP);
+            this.scene.hp = Math.min(this.scene.hp+1,this.scene.maxHP);
             this.scene.hpIcons[this.scene.hp-1].setAlpha(1);
             this.scene.sound.play('collect');
         });
@@ -284,7 +281,7 @@ class GameScene extends Phaser.Scene {
         });
 
         // HEARTS
-        this.hearts = this.physics.add.group();
+        this.hearts = this.physics.add.staticGroup();
         this.spawnHearts(this.totalHearts);
         this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
             h.destroy();
@@ -296,7 +293,7 @@ class GameScene extends Phaser.Scene {
             }
         });
 
-        // ENEMIES
+        // ENEMIES (5)
         this.enemies = this.physics.add.group();
         for(let i=0;i<5;i++){
             const x=800+i*900;
@@ -306,15 +303,12 @@ class GameScene extends Phaser.Scene {
         this.physics.add.collider(this.enemies,this.ground);
         this.physics.add.collider(this.enemies,this.platforms);
 
-        // Колайдер гравець ↔ вороги
-        this.physics.add.collider(this.player, this.enemies, (p, e) => {
-            if(!e.isDead){
-                if(p.body.velocity.y > 0 && p.y + p.height/2 < e.y + e.height/2){
-                    e.die();
-                    p.setVelocityY(-350);
-                } else {
-                    this.damage();
-                }
+        this.physics.add.collider(this.player,this.enemies,(p,e)=>{
+            if(!e.isDead && p.body.velocity.y>0 && p.y<e.y){
+                e.die();
+                p.setVelocityY(-350);
+            } else if(!e.isDead){
+                this.damage();
             }
         });
 
@@ -323,7 +317,7 @@ class GameScene extends Phaser.Scene {
         }
     }
 
-    update(time,delta){
+    update(){
         this.bg.tilePositionX=this.cameras.main.scrollX*0.3;
 
         this.enemies.getChildren().forEach(e=>{
@@ -345,9 +339,8 @@ class GameScene extends Phaser.Scene {
         });
 
         this.movingPlatformsList.forEach(pf=>{
-            pf.body.setVelocityY(pf.speed * pf.direction);
-            if(pf.y<260) pf.direction=1;
-            if(pf.y>480) pf.direction=-1;
+            pf.y += pf.speed * pf.direction * (1/60);
+            if(pf.y<260 || pf.y>480) pf.direction*=-1;
         });
     }
 
@@ -359,26 +352,21 @@ class GameScene extends Phaser.Scene {
     }
 
     spawnPlatforms(){
-        let x=500;
-        let lastWasMoving=false;
-
+        let x=500,lastWasMoving=false;
         for(let i=0;i<20;i++){
             const y=Phaser.Math.Between(260,380);
-            let isMoving = !lastWasMoving && Phaser.Math.Between(0,3)<1;
-            lastWasMoving = isMoving;
+            let isMoving=!lastWasMoving && Phaser.Math.Between(0,3)<1;
+            lastWasMoving=isMoving;
 
-            const pfKey = `pf${Phaser.Math.Between(1,4)}`;
-            const pf = isMoving ? this.movingPlatforms.create(x,y,pfKey) :
-                                  this.platforms.create(x,y,pfKey);
+            const pf = isMoving ? this.movingPlatforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`) :
+                                  this.platforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`);
             pf.refreshBody();
 
             if(isMoving){
                 pf.isMoving=true; pf.speed=Phaser.Math.Between(30,70); pf.direction=1;
                 this.movingPlatformsList.push(pf);
             }
-
-            x += Phaser.Math.Between(280,340);
-            if(isMoving) x += 100;
+            x+=Phaser.Math.Between(280,340);
         }
     }
 
