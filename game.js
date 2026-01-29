@@ -9,6 +9,7 @@ if (window.Telegram && window.Telegram.WebApp) {
     tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
+    tg.disableVerticalSwipes();
 }
 
 /* =========================================================
@@ -35,17 +36,27 @@ class MenuScene extends Phaser.Scene {
 
         this.add.text(width/2,height/3,'Pink Yupik Arcade', titleStyle).setOrigin(0.5);
 
-        this.add.text(width/2,height/2,'PLAY',optionStyle)
+        this.playBtn = this.add.text(width/2,height/2,'PLAY',optionStyle)
             .setOrigin(0.5)
             .setInteractive()
             .on('pointerdown',()=>this.scene.start('SelectScene'));
 
-        this.add.text(width/2,height/2+100,'EXIT',optionStyle)
+        this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',optionStyle)
             .setOrigin(0.5)
             .setInteractive()
             .on('pointerdown',()=>{
                 if(window.Telegram?.WebApp) window.Telegram.WebApp.close();
             });
+
+        // Анімація кнопок
+        this.tweens.add({
+            targets:[this.playBtn,this.exitBtn],
+            scale:1.1,
+            duration:600,
+            yoyo:true,
+            repeat:-1,
+            ease:'Sine.easeInOut'
+        });
     }
 
     update(){
@@ -73,6 +84,7 @@ class SelectScene extends Phaser.Scene {
     create(){
         const {width,height} = this.scale;
         const titleStyle = { fontFamily:'UnifrakturCook', fontSize:'64px', fill:'#e8d9b0' };
+        const optionStyle = { fontFamily:'UnifrakturCook', fontSize:'56px', fill:'#e8d9b0' };
 
         this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
         this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
@@ -84,13 +96,23 @@ class SelectScene extends Phaser.Scene {
         this.add.image(width/2-220,y,'platform');
         this.add.image(width/2+220,y,'platform');
 
-        this.add.image(width/2-220,y-110,'player1_idle')
+        const p1=this.add.image(width/2-220,y-110,'player1_idle')
             .setInteractive()
             .on('pointerdown',()=>this.scene.start('GameScene',{player:'player1'}));
 
-        this.add.image(width/2+220,y-110,'player2_idle')
+        const p2=this.add.image(width/2+220,y-110,'player2_idle')
             .setInteractive()
             .on('pointerdown',()=>this.scene.start('GameScene',{player:'player2'}));
+
+        // Анімація кнопок персонажів
+        this.tweens.add({
+            targets:[p1,p2],
+            scale:1.1,
+            duration:600,
+            yoyo:true,
+            repeat:-1,
+            ease:'Sine.easeInOut'
+        });
     }
 }
 
@@ -354,8 +376,20 @@ class GameScene extends Phaser.Scene {
     showVictoryMessage(){
         const text=this.add.text(this.cameras.main.scrollX+this.cameras.main.width/2,
             this.cameras.main.scrollY+this.cameras.main.height/2,
-            '🎉 Всі серця зібрано! 🎉',{ fontSize:'64px', fill:'#ff0', backgroundColor:'#000', fontFamily:'UnifrakturCook'})
-            .setOrigin(0.5).setDepth(10);
+            '🎉 Всі серця зібрано! 🎉',{
+                fontSize:'64px',
+                fill:'#ff0',
+                fontFamily:'UnifrakturCook',
+                backgroundColor:'#000'
+            }).setOrigin(0.5).setDepth(10);
+
+        this.tweens.add({
+            targets:text,
+            alpha:{from:0,to:1},
+            duration:500,
+            yoyo:true,
+            repeat:-1
+        });
     }
 
     damage(){
@@ -412,15 +446,24 @@ class EndScene extends Phaser.Scene {
             fontFamily:'UnifrakturCook', fontSize:'96px', fill:'#e8d9b0'
         }).setOrigin(0.5);
 
-        this.add.text(width/2,height/2,'PLAY',style)
+        this.playBtn = this.add.text(width/2,height/2,'PLAY',style)
             .setOrigin(0.5)
             .setInteractive()
             .on('pointerdown',()=>this.scene.start('GameScene',{player:data.player}));
 
-        this.add.text(width/2,height/2+100,'EXIT',style)
+        this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',style)
             .setOrigin(0.5)
             .setInteractive()
             .on('pointerdown',()=>this.scene.start('MenuScene'));
+
+        this.tweens.add({
+            targets:[this.playBtn,this.exitBtn],
+            scale:1.1,
+            duration:600,
+            yoyo:true,
+            repeat:-1,
+            ease:'Sine.easeInOut'
+        });
     }
 }
 
