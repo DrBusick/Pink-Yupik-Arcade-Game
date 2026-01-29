@@ -21,6 +21,10 @@ class MenuScene extends Phaser.Scene {
         this.load.image('bg_mid','assets/backgrounds/bg_mid.png');
         this.load.image('bg_near','assets/backgrounds/bg_near.png');
         this.load.audio('hover','assets/sounds/hover.mp3');
+
+        // UI кнопки (залишаю тут на майбутнє)
+        this.load.image('play_btn','assets/UI/play_btn.png');
+        this.load.image('exit_btn','assets/UI/exit_btn.png');
     }
     create(){
         const {width,height} = this.scale;
@@ -30,21 +34,18 @@ class MenuScene extends Phaser.Scene {
 
         document.fonts.ready.then(()=>{
             const titleStyle = { fontFamily:'gameFont', fontSize:'120px', fill:'#e8d9b0' };
-            const optionStyle = { fontFamily:'gameFont', fontSize:'56px', fill:'#e8d9b0' };
 
             this.add.text(width/2,height/3,'Pink Yupik Arcade', titleStyle).setOrigin(0.5);
 
-            this.playBtn = this.add.text(width/2,height/2,'PLAY',optionStyle)
-                .setOrigin(0.5)
+            this.playBtn = this.add.image(width/2, height/2, 'play_btn')
                 .setInteractive()
-                .on('pointerover',()=>this.sound.play('hover'))
-                .on('pointerdown',()=>this.scene.start('SelectScene'));
+                .on('pointerover', ()=>this.sound.play('hover'))
+                .on('pointerdown', ()=>this.scene.start('SelectScene'));
 
-            this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',optionStyle)
-                .setOrigin(0.5)
+            this.exitBtn = this.add.image(width/2, height/2 + 100, 'exit_btn')
                 .setInteractive()
-                .on('pointerover',()=>this.sound.play('hover'))
-                .on('pointerdown',()=>window.Telegram?.WebApp?.close());
+                .on('pointerover', ()=>this.sound.play('hover'))
+                .on('pointerdown', ()=>window.Telegram?.WebApp?.close());
 
             this.tweens.add({
                 targets:[this.playBtn,this.exitBtn],
@@ -238,6 +239,11 @@ class GameScene extends Phaser.Scene {
         this.load.audio('collect','assets/sounds/collect.mp3');
         this.load.audio('walk','assets/sounds/walk.mp3');
         this.load.audio('hover','assets/sounds/hover.mp3');
+
+        // Мобільні кнопки
+        this.load.image('left_btn','assets/UI/left_btn.png');
+        this.load.image('right_btn','assets/UI/right_btn.png');
+        this.load.image('jump_btn','assets/UI/jump_btn.png');
     }
 
     create(){
@@ -312,6 +318,7 @@ class GameScene extends Phaser.Scene {
             }
         });
 
+        // Мобільні кнопки
         if(this.sys.game.device.os.android || this.sys.game.device.os.iOS){
             this.createMobileButtons();
         }
@@ -393,18 +400,29 @@ class GameScene extends Phaser.Scene {
     }
 
     createMobileButtons(){
-        const left=this.add.dom(20,this.scale.height-80,'div','class=button','◀').setOrigin(0);
-        const right=this.add.dom(100,this.scale.height-80,'div','class=button','▶').setOrigin(0);
-        const jump=this.add.dom(this.scale.width-80,this.scale.height-80,'div','class=button','▲').setOrigin(0);
+        const { width, height } = this.scale;
 
-        [left,right,jump].forEach(btn=>this.tweens.add({targets:btn,scale:1.1,duration:600,yoyo:true,repeat:-1,ease:'Sine.easeInOut'}));
+        // Кнопки сенсорні
+        const left = this.add.image(80, height-80, 'left_btn').setInteractive().setScrollFactor(0).setScale(0.8);
+        const right = this.add.image(180, height-80, 'right_btn').setInteractive().setScrollFactor(0).setScale(0.8);
+        const jump = this.add.image(width-80, height-80, 'jump_btn').setInteractive().setScrollFactor(0).setScale(0.8);
 
-        left.addListener('pointerdown'); left.on('pointerdown',()=>this.player.moveLeft=true);
-        left.addListener('pointerup'); left.on('pointerup',()=>this.player.moveLeft=false);
-        right.addListener('pointerdown'); right.on('pointerdown',()=>this.player.moveRight=true);
-        right.addListener('pointerup'); right.on('pointerup',()=>this.player.moveRight=false);
-        jump.addListener('pointerdown'); jump.on('pointerdown',()=>this.player.jump=true);
-        jump.addListener('pointerup'); jump.on('pointerup',()=>this.player.jump=false);
+        [left,right,jump].forEach(btn => {
+            this.tweens.add({targets: btn, scale: 0.9, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut'});
+            btn.on('pointerover', ()=>this.sound.play('hover'));
+        });
+
+        left.on('pointerdown', ()=>this.player.moveLeft=true);
+        left.on('pointerup', ()=>this.player.moveLeft=false);
+        left.on('pointerout', ()=>this.player.moveLeft=false);
+
+        right.on('pointerdown', ()=>this.player.moveRight=true);
+        right.on('pointerup', ()=>this.player.moveRight=false);
+        right.on('pointerout', ()=>this.player.moveRight=false);
+
+        jump.on('pointerdown', ()=>this.player.jump=true);
+        jump.on('pointerup', ()=>this.player.jump=false);
+        jump.on('pointerout', ()=>this.player.jump=false);
     }
 }
 
@@ -421,11 +439,25 @@ class EndScene extends Phaser.Scene {
             this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
             this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
             this.add.text(width/2,height/3,this.label,{fontFamily:'UnifrakturCook', fontSize:'96px', fill:'#e8d9b0'}).setOrigin(0.5);
-            this.playBtn = this.add.text(width/2,height/2,'PLAY',style).setOrigin(0.5)
-                .setInteractive().on('pointerdown',()=>this.scene.start('GameScene',{player:data.player}));
-            this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',style).setOrigin(0.5)
-                .setInteractive().on('pointerdown',()=>this.scene.start('MenuScene'));
-            this.tweens.add({targets:[this.playBtn,this.exitBtn],scale:1.1,duration:600,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
+
+            this.playBtn = this.add.image(width/2, height/2, 'play_btn')
+                .setInteractive()
+                .on('pointerover', ()=>this.sound.play('hover'))
+                .on('pointerdown', ()=>this.scene.start('GameScene',{player:data.player}));
+
+            this.exitBtn = this.add.image(width/2, height/2 + 100, 'exit_btn')
+                .setInteractive()
+                .on('pointerover', ()=>this.sound.play('hover'))
+                .on('pointerdown', ()=>this.scene.start('MenuScene'));
+
+            this.tweens.add({
+                targets:[this.playBtn,this.exitBtn],
+                scale:1.1,
+                duration:600,
+                yoyo:true,
+                repeat:-1,
+                ease:'Sine.easeInOut'
+            });
         });
     }
 }
