@@ -185,7 +185,6 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.isDead=true;
         this.disableBody(true,true);
 
-        // випадає маленьке серце
         const h = this.scene.physics.add.image(this.x,this.y-20,'heart_small')
             .setScale(0.4).setBounce(0.4)
             .setVelocity(Phaser.Math.Between(-80,80),-260)
@@ -317,7 +316,7 @@ class GameScene extends Phaser.Scene {
         }
     }
 
-    update(){
+    update(time,delta){
         this.bg.tilePositionX=this.cameras.main.scrollX*0.3;
 
         this.enemies.getChildren().forEach(e=>{
@@ -339,7 +338,7 @@ class GameScene extends Phaser.Scene {
         });
 
         this.movingPlatformsList.forEach(pf=>{
-            pf.y += pf.speed * pf.direction * (1/60);
+            pf.y += pf.speed * pf.direction * (delta/1000);
             if(pf.y<260 || pf.y>480) pf.direction*=-1;
         });
     }
@@ -352,21 +351,26 @@ class GameScene extends Phaser.Scene {
     }
 
     spawnPlatforms(){
-        let x=500,lastWasMoving=false;
+        let x=500;
+        let lastWasMoving=false;
+
         for(let i=0;i<20;i++){
             const y=Phaser.Math.Between(260,380);
-            let isMoving=!lastWasMoving && Phaser.Math.Between(0,3)<1;
-            lastWasMoving=isMoving;
+            let isMoving = !lastWasMoving && Phaser.Math.Between(0,3)<1;
+            lastWasMoving = isMoving;
 
-            const pf = isMoving ? this.movingPlatforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`) :
-                                  this.platforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`);
+            const pfKey = `pf${Phaser.Math.Between(1,4)}`;
+            const pf = isMoving ? this.movingPlatforms.create(x,y,pfKey) :
+                                  this.platforms.create(x,y,pfKey);
             pf.refreshBody();
 
             if(isMoving){
                 pf.isMoving=true; pf.speed=Phaser.Math.Between(30,70); pf.direction=1;
                 this.movingPlatformsList.push(pf);
             }
-            x+=Phaser.Math.Between(280,340);
+
+            x += Phaser.Math.Between(280,340);
+            if(isMoving) x += 100; // додатковий відступ після рухомої платформи
         }
     }
 
