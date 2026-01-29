@@ -473,7 +473,7 @@ class EndScene extends Phaser.Scene {
             });
         });
     }
-}
+} 
 
 class WinScene extends EndScene { constructor(){ super('WinScene','YOU WIN 🏆'); } }
 class LoseScene extends EndScene { constructor(){ super('LoseScene','GAME OVER 💀'); } }
