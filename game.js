@@ -262,11 +262,8 @@ class GameScene extends Phaser.Scene {
         const p = this.selectedPlayer;
         const e = this.enemyType;
 
-        // Анімації гравця
         this.anims.create({key:'idle',frames:[{key:`${p}_idle`}],repeat:-1});
         this.anims.create({key:'walk',frames:this.anims.generateFrameNumbers(`${p}_walk`),frameRate:10,repeat:-1});
-
-        // Анімації ворога
         this.anims.create({key:'enemy_walk',frames:this.anims.generateFrameNumbers(`${e}_walk`),frameRate:8,repeat:-1});
         this.anims.create({key:'enemy_idle',frames:[{key:`${e}_idle`}],repeat:-1});
 
@@ -319,7 +316,6 @@ class GameScene extends Phaser.Scene {
             this.collectSound.play();
             this.heartsCollected++;
             this.heartText.setText(`❤️ ${this.heartsCollected} / 25`);
-            if(this.heartsCollected===25) this.winText.setAlpha(1);
         });
 
         this.winText = this.add.text(this.cameras.main.centerX,this.cameras.main.centerY,
@@ -347,49 +343,44 @@ class GameScene extends Phaser.Scene {
         this.createTouchControls();
     }
 
-    // ================= ENEMY HIT LOGIC =================
     handleEnemyCollision(player, enemy) {
-        if (player.body.velocity.y > 0 && player.y < enemy.y - 20) {
-            enemy.destroy(); // ворог зникає
+        if(player.body.velocity.y > 0 && player.y < enemy.y - 20){
+            enemy.destroy();
             player.setVelocityY(-350);
 
-            // маленьке серце для відновлення життя
-            const h = this.hearts.create(enemy.x, enemy.y - 50, 'heart').setDisplaySize(40, 40);
-            this.physics.add.overlap(this.player, h, (p, heart) => {
-                heart.destroy();
+            // Падаюче серце з анімацією
+            const heart = this.physics.add.sprite(enemy.x, enemy.y-50,'heart').setDisplaySize(40,40);
+            heart.body.setAllowGravity(true);
+            heart.body.setGravityY(300);
+            this.physics.add.overlap(this.player, heart, (p,h)=>{
+                h.destroy();
                 this.collectSound.play();
-                this.hp = Math.min(this.hp + 1, this.maxHP);
+                this.hp = Math.min(this.hp+1, this.maxHP);
                 this.updateHPUI();
             });
         } else this.onPlayerHit(player, enemy);
     }
 
-    updateHPUI() {
-        for (let i = 0; i < this.maxHP; i++) {
-            if (i < this.hp) this.hpIcons[i].setAlpha(1);
+    updateHPUI(){
+        for(let i=0;i<this.maxHP;i++){
+            if(i<this.hp) this.hpIcons[i].setAlpha(1);
             else this.hpIcons[i].setAlpha(0.3);
         }
     }
 
     onPlayerHit(player){
         if(this.isInvulnerable) return;
-        this.isInvulnerable=true;
-
+        this.isInvulnerable = true;
         this.hp--;
         this.updateHPUI();
 
         this.tweens.add({targets:player,alpha:0,duration:80,yoyo:true,repeat:8});
-
-        this.time.delayedCall(900,()=>{
-            this.isInvulnerable=false;
-            player.setAlpha(1);
-        });
+        this.time.delayedCall(900,()=>{this.isInvulnerable=false;player.setAlpha(1);});
 
         if(this.hp <= 0){
             player.setVelocity(0,0);
             player.anims.stop();
             this.physics.pause();
-
             this.gameOverGroup.setAlpha(1);
             this.gameOverGroup.iterate(child=>child.setInteractive());
             this.input.enabled = true;
@@ -411,9 +402,7 @@ class GameScene extends Phaser.Scene {
                 p.range=120;
                 p.speed=50;
                 p.body.setVelocityY(p.speed);
-            } else {
-                this.staticPlatforms.create(x,y,key).refreshBody();
-            }
+            } else this.staticPlatforms.create(x,y,key).refreshBody();
             x+=Phaser.Math.Between(260,320);
         }
     }
@@ -421,16 +410,13 @@ class GameScene extends Phaser.Scene {
     spawnHeartsSafe(count){
         const hearts=[];
         const platforms=[...this.staticPlatforms.getChildren(),...this.movingPlatforms.getChildren()];
-
         while(hearts.length<count){
             const x=Phaser.Math.Between(200,this.worldWidth-200);
             const y=Phaser.Math.Between(150,500);
             const rect=new Phaser.Geom.Rectangle(x-25,y-25,50,50);
-
             let bad=false;
             for(const h of hearts) if(Phaser.Geom.Intersects.RectangleToRectangle(rect,h)) bad=true;
             for(const p of platforms) if(Phaser.Geom.Intersects.RectangleToRectangle(rect,p.getBounds())) bad=true;
-
             if(!bad){
                 this.hearts.create(x,y,'heart').setDisplaySize(50,50).refreshBody();
                 hearts.push(rect);
@@ -441,8 +427,7 @@ class GameScene extends Phaser.Scene {
     createTouchControls(){
         const { width, height } = this.scale;
         const makeBtn=(x,y,key)=>{
-            const b=this.add.image(x,y,key).setScrollFactor(0)
-                .setAlpha(0.55).setInteractive();
+            const b=this.add.image(x,y,key).setScrollFactor(0).setAlpha(0.55).setInteractive();
             b.on('pointerdown',()=>b.setAlpha(0.85));
             b.on('pointerup',()=>b.setAlpha(0.55));
             b.on('pointerout',()=>b.setAlpha(0.55));
