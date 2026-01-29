@@ -160,7 +160,6 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 }
 
-
 // ======================= GAME SCENE ========================
 class GameScene extends Phaser.Scene {
     constructor(){
@@ -211,18 +210,15 @@ class GameScene extends Phaser.Scene {
         const p = this.selectedPlayer;
         const e = this.enemyType;
 
-        // Анімації гравця
+        // Анімації
         this.anims.create({key:'idle',frames:[{key:`${p}_idle`}],repeat:-1});
         this.anims.create({key:'walk',frames:this.anims.generateFrameNumbers(`${p}_walk`),frameRate:10,repeat:-1});
-
-        // Анімації ворога
         this.anims.create({key:'enemy_idle',frames:[{key:`${e}_idle`}],repeat:-1});
         this.anims.create({key:'enemy_walk',frames:this.anims.generateFrameNumbers(`${e}_walk`),frameRate:8,repeat:-1});
 
         // Звуки
         this.jumpSound = this.sound.add('jump');
         this.collectSound = this.sound.add('collect');
-        this.walkSound = this.sound.add('walk',{loop:true,volume:0.5});
 
         // Світ
         this.physics.world.setBounds(0,0,this.worldWidth,this.worldHeight);
@@ -244,7 +240,7 @@ class GameScene extends Phaser.Scene {
         this.physics.add.collider(this.player,this.staticPlatforms);
         this.physics.add.collider(this.player,this.movingPlatforms);
 
-        // HP UI
+        // HP
         this.hpIcons = [];
         for(let i=0;i<this.maxHP;i++)
             this.hpIcons.push(this.add.image(20+i*40,60,'heart').setScrollFactor(0).setScale(0.45));
@@ -261,27 +257,18 @@ class GameScene extends Phaser.Scene {
         this.hearts = this.physics.add.staticGroup();
         this.spawnHeartsSafe(25);
         this.heartText = this.add.text(20,20,'❤️ 0 / 25',{fontSize:'32px',fill:'#e8d9b0'}).setScrollFactor(0);
-
         this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
             h.destroy();
             this.collectSound.play();
             this.heartsCollected++;
             this.heartText.setText(`❤️ ${this.heartsCollected} / 25`);
-            if(this.heartsCollected===25) this.winText.setAlpha(1);
         });
-
-        this.winText = this.add.text(this.cameras.main.centerX,this.cameras.main.centerY,
-            'ALL 25 HEARTS\nCOLLECTED!',{fontFamily:'UnifrakturCook',fontSize:'96px',fill:'#fff2c1',align:'center'})
-            .setOrigin(0.5).setScrollFactor(0).setAlpha(0);
 
         // Game Over UI
         this.gameOverGroup = this.add.container(this.cameras.main.centerX,this.cameras.main.centerY).setScrollFactor(0).setAlpha(0);
         const dieText = this.add.text(0,-80,'YOU DIE!',{fontFamily:'UnifrakturCook',fontSize:'96px',fill:'#ff6b6b'}).setOrigin(0.5);
-        const retry = this.add.text(0,20,'PLAY',{fontFamily:'UnifrakturCook',fontSize:'48px',fill:'#e8d9b0'})
-            .setOrigin(0.5).setInteractive();
-        const menu = this.add.text(0,90,'EXIT',{fontFamily:'UnifrakturCook',fontSize:'48px',fill:'#e8d9b0'})
-            .setOrigin(0.5).setInteractive();
-
+        const retry = this.add.text(0,20,'PLAY',{fontFamily:'UnifrakturCook',fontSize:'48px',fill:'#e8d9b0'}).setOrigin(0.5).setInteractive();
+        const menu = this.add.text(0,90,'EXIT',{fontFamily:'UnifrakturCook',fontSize:'48px',fill:'#e8d9b0'}).setOrigin(0.5).setInteractive();
         retry.on('pointerdown',()=>this.scene.restart({player:this.selectedPlayer}));
         menu.on('pointerdown',()=>this.scene.start('MenuScene'));
         this.gameOverGroup.add([dieText,retry,menu]);
@@ -297,37 +284,30 @@ class GameScene extends Phaser.Scene {
 
     handleEnemyCollision(player,enemy){
         if(enemy.isDead) return;
-
         if(player.body.velocity.y > 0 && player.y < enemy.y - 20){
             enemy.isDead = true;
             enemy.disableBody(true,true);
-
-            // маленьке серце після вбивства ворога
             const heart = this.physics.add.image(enemy.x,enemy.y-20,'heart_small').setScale(0.4);
             heart.setVelocityY(-200);
             this.physics.add.overlap(this.player,heart,(p,h)=>{
-                h.destroy(); this.hp = Math.min(this.hp+1,this.maxHP); this.hpIcons[this.hp-1].setAlpha(1); 
+                h.destroy();
+                this.hp = Math.min(this.hp+1,this.maxHP);
+                if(this.hpIcons[this.hp-1]) this.hpIcons[this.hp-1].setAlpha(1);
             });
-
             player.setVelocityY(-350);
-        } else {
-            this.onPlayerHit(player);
-        }
+        } else this.onPlayerHit(player);
     }
 
     onPlayerHit(player){
         if(this.isInvulnerable) return;
         this.isInvulnerable = true;
-
         this.hp--;
         if(this.hpIcons[this.hp]) this.hpIcons[this.hp].setAlpha(0.3);
-
         this.tweens.add({targets:player,alpha:0,duration:80,yoyo:true,repeat:8});
         this.time.delayedCall(900,()=>{this.isInvulnerable=false; player.setAlpha(1);});
-
         if(this.hp<=0){
             player.setVelocity(0,0); player.anims.stop(); this.physics.pause();
-            this.gameOverText.setFill('#e8d9b0'); // зміна кольору
+            this.gameOverText.setFill('#e8d9b0'); 
             this.gameOverButtons.forEach(b=>b.setFill('#e8d9b0'));
             this.gameOverGroup.setAlpha(1);
         }
@@ -356,15 +336,10 @@ class GameScene extends Phaser.Scene {
             const x = Phaser.Math.Between(200,this.worldWidth-200);
             const y = Phaser.Math.Between(150,500);
             const rect = new Phaser.Geom.Rectangle(x-25,y-25,50,50);
-
             let bad = false;
             for(const h of hearts) if(Phaser.Geom.Intersects.RectangleToRectangle(rect,h)) bad=true;
             for(const p of platforms) if(Phaser.Geom.Intersects.RectangleToRectangle(rect,p.getBounds())) bad=true;
-
-            if(!bad){
-                this.hearts.create(x,y,'heart').setDisplaySize(50,50).refreshBody();
-                hearts.push(rect);
-            }
+            if(!bad){ this.hearts.create(x,y,'heart').setDisplaySize(50,50).refreshBody(); hearts.push(rect); }
         }
     }
 
@@ -402,13 +377,15 @@ class GameScene extends Phaser.Scene {
     }
 }
 
-
-// ======================= CONFIG =======================
-new Phaser.Game({
+// ======================= CONFIG ===========================
+const config = {
     type: Phaser.AUTO,
     width: 1248,
     height: 832,
-    scale: {mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH},
-    physics: {default:'arcade', arcade:{gravity:{y:900}, debug:false}},
-    scene: [MenuScene, SelectScene, GameScene]
-});
+    backgroundColor:'#7ec0ee',
+    physics:{default:'arcade', arcade:{gravity:{y:1100},debug:false}},
+    scene:[MenuScene,SelectScene,GameScene],
+    parent:'game-container'
+};
+
+const game = new Phaser.Game(config);
