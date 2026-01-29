@@ -1,6 +1,8 @@
-let selectedPlayer = 'player';
+/* ======================================================
+   GLOBAL
+====================================================== */
+let selectedPlayer = 'player1';
 
-// ======================= MENU SCENE ========================
 let tg = null;
 if (window.Telegram && window.Telegram.WebApp) {
     tg = window.Telegram.WebApp;
@@ -8,6 +10,9 @@ if (window.Telegram && window.Telegram.WebApp) {
     tg.expand();
 }
 
+/* ======================================================
+   MENU SCENE
+====================================================== */
 class MenuScene extends Phaser.Scene {
     constructor() { super('MenuScene'); }
 
@@ -19,40 +24,36 @@ class MenuScene extends Phaser.Scene {
     }
 
     create() {
-        const { width, height } = this.sys.game.config;
+        const { width, height } = this.scale;
 
-        this.bgFar  = this.add.tileSprite(0, 0, width, height, 'bg_far').setOrigin(0);
-        this.bgMid  = this.add.tileSprite(0, 0, width, height, 'bg_mid').setOrigin(0);
-        this.bgNear = this.add.tileSprite(0, 0, width, height, 'bg_near').setOrigin(0);
+        this.bgFar  = this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
+        this.bgMid  = this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
+        this.bgNear = this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
-        this.hoverSound = this.sound.add('hover', { volume: 0.6 });
+        this.hoverSound = this.sound.add('hover',{volume:0.5});
 
-        const title = this.add.text(width / 2, height / 4, 'Pink Yupik Arcade', {
-            fontFamily: 'UnifrakturCook',
-            fontSize: '144px',
-            fill: '#e8d9b0'
-        }).setOrigin(0.5).setShadow(0,0,'#fff2c1',20,true,true);
+        const title = this.add.text(width/2,height/4,'Pink Yupik Arcade',{
+            fontFamily:'UnifrakturCook',
+            fontSize:'140px',
+            fill:'#e8d9b0'
+        }).setOrigin(0.5);
 
         this.tweens.add({
-            targets: title,
-            duration: 2000,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut'
+            targets:title,
+            alpha:0.7,
+            duration:2000,
+            yoyo:true,
+            repeat:-1
         });
 
-        const btnStyle = { fontFamily:'UnifrakturCook', fontSize:'56px', fill:'#e8d9b0' };
+        const play = this.add.text(width/2,height/2,'PLAY',{
+            fontFamily:'UnifrakturCook',
+            fontSize:'60px',
+            fill:'#e8d9b0'
+        }).setOrigin(0.5).setInteractive();
 
-        const play = this.add.text(width/2, height/2 - 60, 'PLAY', btnStyle)
-            .setOrigin(0.5).setInteractive({ useHandCursor:true });
-
-        play.on('pointerover', () => this.hoverSound.play());
-        play.on('pointerdown', () => this.scene.start('SelectScene'));
-
-        const exit = this.add.text(width/2, height/2 + 100, 'EXIT', btnStyle)
-            .setOrigin(0.5).setInteractive({ useHandCursor:true });
-
-        exit.on('pointerdown', () => window.close());
+        play.on('pointerover',()=>this.hoverSound.play());
+        play.on('pointerdown',()=>this.scene.start('SelectScene'));
     }
 
     update() {
@@ -62,68 +63,58 @@ class MenuScene extends Phaser.Scene {
     }
 }
 
-// ======================= SELECT SCENE ========================
+/* ======================================================
+   SELECT SCENE
+====================================================== */
 class SelectScene extends Phaser.Scene {
     constructor(){ super('SelectScene'); }
 
     preload() {
-        this.load.image('bg_far', 'assets/backgrounds/bg_far.png');
-        this.load.image('bg_mid', 'assets/backgrounds/bg_mid.png');
-        this.load.image('bg_near', 'assets/backgrounds/bg_near.png');
-
         this.load.image('p1_idle','assets/player1/idle.png');
         this.load.image('p2_idle','assets/player2/idle.png');
-        this.load.image('select_platform','assets/platforms/platform_1.png');
     }
 
     create(){
         const {width,height}=this.scale;
 
-        this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
-        this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
-        this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
-
-        this.add.text(width/2,120,'Select Character',{
-            fontFamily:'UnifrakturCook',fontSize:'64px',fill:'#e8d9b0'
+        this.add.text(width/2,100,'Select Character',{
+            fontFamily:'UnifrakturCook',
+            fontSize:'64px',
+            fill:'#e8d9b0'
         }).setOrigin(0.5);
 
-        const baseY = height/2 + 90;
-
-        this.add.image(width/2 - 220, baseY, 'select_platform');
-        this.add.image(width/2 + 220, baseY, 'select_platform');
-
-        this.add.image(width/2 - 220, baseY - 110, 'p1_idle')
+        this.add.image(width/2-200,height/2,'p1_idle')
             .setInteractive()
             .on('pointerdown',()=>this.scene.start('GameScene',{player:'player1'}));
 
-        this.add.image(width/2 + 220, baseY - 110, 'p2_idle')
+        this.add.image(width/2+200,height/2,'p2_idle')
             .setInteractive()
             .on('pointerdown',()=>this.scene.start('GameScene',{player:'player2'}));
     }
 }
 
-// ======================= PLAYER ========================
+/* ======================================================
+   PLAYER
+====================================================== */
 class Player extends Phaser.Physics.Arcade.Sprite {
-    constructor(scene, x, y, type) {
-        super(scene, x, y, `${type}_idle`);
+    constructor(scene,x,y,type){
+        super(scene,x,y,`${type}_idle`);
         scene.add.existing(this);
         scene.physics.add.existing(this);
 
         this.setCollideWorldBounds(true);
         this.setBodySize(90,120).setOffset(26,18);
 
-        this.speed = 260;
-        this.accel = 1200;
-        this.jumpVelocity = 520;
+        this.speed=260;
+        this.accel=1200;
+        this.jumpVelocity=520;
 
-        this.jumpCount = 0;
-        this.maxJumps = 3;
+        this.jumpCount=0;
+        this.maxJumps=2;
 
-        this.facing = 'right';
-
-        this.keys = scene.input.keyboard.addKeys({
-            left:'A', right:'D', up:'W',
-            left2:'LEFT', right2:'RIGHT', up2:'UP'
+        this.keys=scene.input.keyboard.addKeys({
+            left:'A',right:'D',up:'W',
+            left2:'LEFT',right2:'RIGHT',up2:'UP'
         });
     }
 
@@ -133,8 +124,8 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         const l=this.keys.left.isDown||this.keys.left2.isDown;
         const r=this.keys.right.isDown||this.keys.right2.isDown;
 
-        if(l){ this.setAccelerationX(-this.accel); this.facing='left'; }
-        else if(r){ this.setAccelerationX(this.accel); this.facing='right'; }
+        if(l) this.setAccelerationX(-this.accel);
+        else if(r) this.setAccelerationX(this.accel);
         else this.setAccelerationX(0);
 
         if(
@@ -146,27 +137,27 @@ class Player extends Phaser.Physics.Arcade.Sprite {
             this.jumpCount++;
         }
 
-        if(this.body.blocked.down) this.jumpCount = 0;
-
-        this.setFlipX(this.facing==='left');
-        this.anims.play(l||r?'walk':'idle',true);
+        if(this.body.blocked.down) this.jumpCount=0;
     }
 }
 
-// ======================= ENEMY (AI) ========================
+/* ======================================================
+   ENEMY (AI)
+====================================================== */
 class Enemy extends Phaser.Physics.Arcade.Sprite {
     constructor(scene,x,y,type){
         super(scene,x,y,`${type}_idle`);
         scene.add.existing(this);
         scene.physics.add.existing(this);
 
-        this.scene = scene;
+        this.scene=scene;
+
         this.setCollideWorldBounds(true);
         this.setBodySize(90,120).setOffset(26,18);
 
-        this.speed = 90;
-        this.chaseRange = 450;
-        this.stopRange = 60;
+        this.speed=90;
+        this.chaseRange=420;
+        this.stopRange=60;
 
         this.play('enemy_walk');
     }
@@ -176,29 +167,30 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
         if(!p) return;
 
         const d=Phaser.Math.Distance.Between(this.x,this.y,p.x,p.y);
-        if(d < this.chaseRange && d > this.stopRange){
-            const dir = p.x < this.x ? -1 : 1;
-            this.setVelocityX(this.speed * dir);
-            this.setFlipX(dir < 0);
+        if(d<this.chaseRange && d>this.stopRange){
+            const dir=p.x<this.x?-1:1;
+            this.setVelocityX(this.speed*dir);
+            this.setFlipX(dir<0);
         } else this.setVelocityX(0);
     }
 }
 
-// ======================= GAME SCENE ========================
+/* ======================================================
+   GAME SCENE
+====================================================== */
 class GameScene extends Phaser.Scene {
     constructor(){
         super('GameScene');
-        this.worldWidth = 6000;
-        this.worldHeight = 832;
+        this.worldWidth=6000;
 
-        this.maxHP = 3;
-        this.hp = 3;
-        this.isInvulnerable = false;
+        this.maxHP=3;
+        this.hp=3;
+        this.isInvulnerable=false;
     }
 
     init(data){
-        this.selectedPlayer = data.player;
-        this.enemyType = this.selectedPlayer === 'player1' ? 'player2' : 'player1';
+        this.selectedPlayer=data.player;
+        this.enemyType=this.selectedPlayer==='player1'?'player2':'player1';
     }
 
     preload(){
@@ -236,48 +228,45 @@ class GameScene extends Phaser.Scene {
             repeat:-1
         });
 
-        this.physics.world.setBounds(0,0,this.worldWidth,this.worldHeight);
+        this.physics.world.setBounds(0,0,this.worldWidth,832);
 
         this.ground=this.physics.add.staticGroup();
-        const gW=this.textures.get('ground').getSourceImage().width;
-        for(let i=0;i<this.worldWidth/gW;i++)
-            this.ground.create(i*gW+gW/2,this.worldHeight,'ground')
-                .setOrigin(0.5,1).refreshBody();
+        for(let i=0;i<50;i++)
+            this.ground.create(i*128,832,'ground')
+                .setOrigin(0,1).refreshBody();
 
         this.player=new Player(this,200,300,p);
         this.physics.add.collider(this.player,this.ground);
 
         // HP UI
         this.hpIcons=[];
-        for(let i=0;i<this.maxHP;i++){
+        for(let i=0;i<this.maxHP;i++)
             this.hpIcons.push(
-                this.add.image(20+i*40,40,'heart')
+                this.add.image(30+i*40,40,'heart')
                     .setScrollFactor(0).setScale(0.5)
             );
-        }
 
         // Enemies
         this.enemies=this.physics.add.group();
-        for(let i=0;i<6;i++){
+        for(let i=0;i<6;i++)
             this.enemies.add(new Enemy(this,600+i*500,300,e));
-        }
 
         this.physics.add.collider(this.enemies,this.ground);
         this.physics.add.collider(
-            this.player,
-            this.enemies,
-            this.handleEnemyCollision,
-            null,
-            this
+            this.player,this.enemies,
+            this.handleEnemyCollision,null,this
         );
 
         // Heart drops
         this.dropHearts=this.physics.add.group();
         this.physics.add.collider(this.dropHearts,this.ground);
-        this.physics.add.overlap(this.player,this.dropHearts,this.collectDropHeart,null,this);
+        this.physics.add.overlap(
+            this.player,this.dropHearts,
+            this.collectDropHeart,null,this
+        );
 
         this.cameras.main.startFollow(this.player);
-        this.cameras.main.setBounds(0,0,this.worldWidth,this.worldHeight);
+        this.cameras.main.setBounds(0,0,this.worldWidth,832);
     }
 
     handleEnemyCollision(player,enemy){
@@ -293,7 +282,8 @@ class GameScene extends Phaser.Scene {
         this.isInvulnerable=true;
 
         this.hp--;
-        if(this.hpIcons[this.hp]) this.hpIcons[this.hp].setAlpha(0.3);
+        if(this.hpIcons[this.hp])
+            this.hpIcons[this.hp].setAlpha(0.3);
 
         this.tweens.add({
             targets:player,
@@ -308,12 +298,15 @@ class GameScene extends Phaser.Scene {
             player.setAlpha(1);
         });
 
-        if(this.hp<=0) this.scene.restart({player:this.selectedPlayer});
+        if(this.hp<=0)
+            this.scene.restart({player:this.selectedPlayer});
     }
 
     spawnHeartDrop(x,y){
         const h=this.dropHearts.create(x,y,'heart');
-        h.setVelocity(Phaser.Math.Between(-120,120),-300);
+        h.setVelocity(
+            Phaser.Math.Between(-120,120),-300
+        );
         h.setScale(0.4);
     }
 
@@ -326,12 +319,13 @@ class GameScene extends Phaser.Scene {
     }
 }
 
-// ======================= CONFIG ========================
+/* ======================================================
+   CONFIG
+====================================================== */
 new Phaser.Game({
     type:Phaser.AUTO,
     width:1248,
     height:832,
-    scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
-    physics:{default:'arcade',arcade:{gravity:{y:900},debug:false}},
+    physics:{default:'arcade',arcade:{gravity:{y:900}}},
     scene:[MenuScene,SelectScene,GameScene]
 });
