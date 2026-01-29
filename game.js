@@ -407,7 +407,7 @@ class GameScene extends Phaser.Scene {
         jump.addListener('pointerup'); jump.on('pointerup',()=>this.player.jump=false);
     }
 }
-
+ 
 /* =========================================================
    WIN / LOSE SCENES
 ========================================================= */
