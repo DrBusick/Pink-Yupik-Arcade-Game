@@ -247,38 +247,50 @@ class GameScene extends Phaser.Scene {
     }
 
     create(){
+        /* ANIMATIONS */
         this.anims.create({key:'idle',frames:[{key:`${this.selectedPlayer}_idle`}],repeat:-1});
         this.anims.create({key:'walk',frames:this.anims.generateFrameNumbers(`${this.selectedPlayer}_walk`),frameRate:10,repeat:-1});
         this.anims.create({key:`${this.enemyType}_walk`,frames:this.anims.generateFrameNumbers(`${this.enemyType}_walk`),frameRate:10,repeat:-1});
 
         this.physics.world.setBounds(0,0,this.worldWidth,this.worldHeight);
 
+        /* BACKGROUND */
         this.bg=this.add.tileSprite(0,0,this.worldWidth,832,'bg').setOrigin(0);
 
+        /* GROUND */
         this.ground=this.physics.add.staticGroup();
         const gW=this.textures.get('ground').getSourceImage().width;
         for(let i=0;i<this.worldWidth/gW;i++)
-            this.ground.create(i*gW+gW/2,this.worldHeight,'ground').setOrigin(0.5,1).refreshBody();
+            this.ground.create(i*gW+gW/2,this.worldHeight,'ground')
+                .setOrigin(0.5,1).refreshBody();
 
+        /* PLATFORMS */
         this.platforms=this.physics.add.staticGroup();
         this.movingPlatforms=this.physics.add.group({allowGravity:false,immovable:true});
 
-        this.spawnPlatformsSafe();
+        this.spawnPlatformsSafe(); // ⭐ ГОЛОВНЕ
 
+        /* PLAYER */
         this.player=new Player(this,200,620,`${this.selectedPlayer}_idle`);
         this.physics.add.collider(this.player,this.ground);
         this.physics.add.collider(this.player,this.platforms);
         this.physics.add.collider(this.player,this.movingPlatforms);
 
+        /* CAMERA */
         this.cameras.main.startFollow(this.player,true,0.08,0.08);
         this.cameras.main.setBounds(0,0,this.worldWidth,this.worldHeight);
 
+        /* UI */
         this.hpIcons=[];
         for(let i=0;i<this.maxHP;i++)
             this.hpIcons.push(this.add.image(20+i*40,100,'heart').setScrollFactor(0).setScale(0.45));
 
-        this.heartText=this.add.text(20,60,`❤️ 0 / ${this.totalHearts}`,{fontSize:'32px',fill:'#e8d9b0'}).setScrollFactor(0);
+        this.heartText=this.add.text(
+            20,60,`❤️ 0 / ${this.totalHearts}`,
+            {fontSize:'32px',fill:'#e8d9b0'}
+        ).setScrollFactor(0);
 
+        /* ENEMIES */
         this.enemies=this.physics.add.group();
         for(let i=0;i<5;i++)
             this.enemies.add(new Enemy(this,800+i*900,620,this.enemyType));
@@ -293,6 +305,7 @@ class GameScene extends Phaser.Scene {
             }
         });
 
+        /* HEARTS */
         this.hearts=this.physics.add.staticGroup();
         this.spawnHeartsSafe(this.totalHearts);
 
@@ -303,21 +316,47 @@ class GameScene extends Phaser.Scene {
         });
     }
 
+    /* =====================================================
+       PLATFORM SPAWN — 20 TOTAL (15 STATIC + 5 MOVING)
+    ===================================================== */
     spawnPlatformsSafe(){
+        const staticRects=[];
         let x=500;
-        for(let i=0;i<20;i++){
-            this.platforms.create(x,Phaser.Math.Between(260,380),`pf${Phaser.Math.Between(1,4)}`).refreshBody();
+
+        /* 15 STATIC */
+        for(let i=0;i<15;i++){
+            const y=Phaser.Math.Between(260,380);
+            const p=this.platforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`).refreshBody();
+            staticRects.push(p.getBounds());
             x+=Phaser.Math.Between(280,340);
         }
 
-        let mx=800;
-        for(let i=0;i<5;i++){
-            const p=this.movingPlatforms.create(mx,Phaser.Math.Between(460,500),`pf${Phaser.Math.Between(1,4)}`);
-            p.startY=p.y;
-            p.range=120;
-            p.speed=50;
-            p.body.setVelocityY(p.speed);
-            mx+=900;
+        /* 5 MOVING — NO OVERLAP */
+        let attempts=0;
+        let created=0;
+
+        while(created<5 && attempts<200){
+            attempts++;
+
+            const x=Phaser.Math.Between(600,this.worldWidth-600);
+            const y=Phaser.Math.Between(460,500);
+            const rect=new Phaser.Geom.Rectangle(x-70,y-20,140,40);
+
+            let bad=false;
+            for(const r of staticRects)
+                if(Phaser.Geom.Intersects.RectangleToRectangle(rect,r)) bad=true;
+
+            for(const m of this.movingPlatforms.getChildren())
+                if(Phaser.Geom.Intersects.RectangleToRectangle(rect,m.getBounds())) bad=true;
+
+            if(!bad){
+                const p=this.movingPlatforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`);
+                p.startY=y;
+                p.range=120;
+                p.speed=50;
+                p.body.setVelocityY(p.speed);
+                created++;
+            }
         }
     }
 
@@ -331,8 +370,10 @@ class GameScene extends Phaser.Scene {
             const r=new Phaser.Geom.Rectangle(x-24,y-24,48,48);
 
             let bad=false;
-            for(const t of taken) if(Phaser.Geom.Intersects.RectangleToRectangle(r,t)) bad=true;
-            for(const p of plats) if(Phaser.Geom.Intersects.RectangleToRectangle(r,p.getBounds())) bad=true;
+            for(const t of taken)
+                if(Phaser.Geom.Intersects.RectangleToRectangle(r,t)) bad=true;
+            for(const p of plats)
+                if(Phaser.Geom.Intersects.RectangleToRectangle(r,p.getBounds())) bad=true;
 
             if(!bad){
                 this.hearts.create(x,y,'heart').setScale(0.45).refreshBody();
@@ -350,7 +391,7 @@ class GameScene extends Phaser.Scene {
 }
 
 /* =========================================================
-   CONFIG 
+   CONFIG
 ========================================================= */
 new Phaser.Game({
     type:Phaser.AUTO,
