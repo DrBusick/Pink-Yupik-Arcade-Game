@@ -47,14 +47,12 @@ class MenuScene extends Phaser.Scene {
 
         const play = this.add.text(width/2, height/2 - 60, 'PLAY', btnStyle)
             .setOrigin(0.5).setInteractive({ useHandCursor:true });
-
         play.on('pointerover', () => this.hoverSound.play());
         play.on('pointerdown', () => this.scene.start('SelectScene'));
 
         const exit = this.add.text(width/2, height/2 + 100, 'EXIT', btnStyle)
             .setOrigin(0.5)
             .setInteractive({ useHandCursor:true });
-
         exit.on('pointerover', () => {
             this.hoverSound.play();
             exit.setScale(1.15);
@@ -64,10 +62,7 @@ class MenuScene extends Phaser.Scene {
             exit.setScale(1);
             exit.clearTint();
         });
-        exit.on('pointerdown', () => {
-            this.hoverSound.play();
-            window.close();
-        });
+        exit.on('pointerdown', () => window.close());
     }
 
     update() {
@@ -102,7 +97,6 @@ class SelectScene extends Phaser.Scene {
         }).setOrigin(0.5);
 
         const baseY = height / 2 + 90;
-
         this.add.image(width/2 - 220, baseY, 'select_platform').setScale(1.1);
         this.add.image(width/2 + 220, baseY, 'select_platform').setScale(1.1);
 
@@ -120,8 +114,8 @@ class SelectScene extends Phaser.Scene {
 
 // ======================= PLAYER ========================
 class Player extends Phaser.Physics.Arcade.Sprite {
-    constructor(scene, x, y) {
-        super(scene, x, y, 'idle');
+    constructor(scene, x, y, key){
+        super(scene, x, y, key);
         scene.add.existing(this);
         scene.physics.add.existing(this);
 
@@ -160,12 +154,10 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         else if(r){ this.setAccelerationX(this.accel); this.facing='right'; }
         else this.setAccelerationX(0);
 
-        if(
-            (Phaser.Input.Keyboard.JustDown(this.keys.up) ||
-             Phaser.Input.Keyboard.JustDown(this.keys.up2) ||
-             this.touchJump) &&
-            this.jumpCount < this.maxJumps
-        ){
+        if((Phaser.Input.Keyboard.JustDown(this.keys.up) ||
+            Phaser.Input.Keyboard.JustDown(this.keys.up2) ||
+            this.touchJump) &&
+            this.jumpCount < this.maxJumps){
             this.setVelocityY(-this.jumpVelocity);
             this.jumpCount++;
             this.scene.jumpSound.play();
@@ -224,33 +216,31 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
 class GameScene extends Phaser.Scene {
     constructor(){
         super('GameScene');
-        this.worldWidth=6000;
-        this.worldHeight=832;
+        this.worldWidth = 6000;
+        this.worldHeight = 832;
 
-        this.maxHP=3;
-        this.hp=3;
-        this.isInvulnerable=false;
+        this.maxHP = 3;
+        this.hp = 3;
+        this.isInvulnerable = false;
 
-        this.heartsCollected=0;
-        this.selectedPlayer='player1';
+        this.heartsCollected = 0;
+        this.selectedPlayer = 'player1';
     }
 
     init(data){
-        if(data?.player) this.selectedPlayer=data.player;
-        this.enemyType=this.selectedPlayer==='player1'?'player2':'player1';
+        if(data?.player) this.selectedPlayer = data.player;
+        this.enemyType = this.selectedPlayer === 'player1' ? 'player2' : 'player1';
     }
 
     preload(){
-        const p=this.selectedPlayer;
-        const e=this.enemyType;
+        const p = this.selectedPlayer;
+        const e = this.enemyType;
 
         this.load.image(`${p}_idle`,`assets/${p}/idle.png`);
-        this.load.spritesheet(`${p}_walk`,`assets/${p}/walk.png`,
-            {frameWidth:142,frameHeight:142});
+        this.load.spritesheet(`${p}_walk`,`assets/${p}/walk.png`,{frameWidth:142,frameHeight:142});
 
         this.load.image(`${e}_idle`,`assets/${e}/idle.png`);
-        this.load.spritesheet(`${e}_walk`,`assets/${e}/walk.png`,
-            {frameWidth:142,frameHeight:142});
+        this.load.spritesheet(`${e}_walk`,`assets/${e}/walk.png`,{frameWidth:142,frameHeight:142});
 
         this.load.image('bg','assets/backgrounds/bg.png');
         this.load.image('ground','assets/platforms/ground.png');
@@ -269,72 +259,62 @@ class GameScene extends Phaser.Scene {
     }
 
     create(){
-        const p=this.selectedPlayer;
-        const e=this.enemyType;
+        const p = this.selectedPlayer;
+        const e = this.enemyType;
 
+        // Анімації гравця
         this.anims.create({key:'idle',frames:[{key:`${p}_idle`}],repeat:-1});
-        this.anims.create({
-            key:'walk',
-            frames:this.anims.generateFrameNumbers(`${p}_walk`),
-            frameRate:10,repeat:-1
-        });
-        this.anims.create({
-            key:'enemy_walk',
-            frames:this.anims.generateFrameNumbers(`${e}_walk`),
-            frameRate:8,repeat:-1
-        });
-        this.anims.create({
-            key:'enemy_idle',
-            frames:[{key:`${e}_idle`}],
-            repeat:-1
-        });
+        this.anims.create({key:'walk',frames:this.anims.generateFrameNumbers(`${p}_walk`),frameRate:10,repeat:-1});
 
-        this.jumpSound=this.sound.add('jump');
-        this.collectSound=this.sound.add('collect');
+        // Анімації ворога
+        this.anims.create({key:'enemy_walk',frames:this.anims.generateFrameNumbers(`${e}_walk`),frameRate:8,repeat:-1});
+        this.anims.create({key:'enemy_idle',frames:[{key:`${e}_idle`}],repeat:-1});
+
+        this.jumpSound = this.sound.add('jump');
+        this.collectSound = this.sound.add('collect');
 
         this.physics.world.setBounds(0,0,this.worldWidth,this.worldHeight);
 
-        this.bg=this.add.tileSprite(0,0,1248,832,'bg')
-            .setOrigin(0).setScrollFactor(0);
+        this.bg = this.add.tileSprite(0,0,1248,832,'bg').setOrigin(0).setScrollFactor(0);
 
-        this.ground=this.physics.add.staticGroup();
-        const gW=this.textures.get('ground').getSourceImage().width;
+        // Ґрунт
+        this.ground = this.physics.add.staticGroup();
+        const gW = this.textures.get('ground').getSourceImage().width;
         for(let i=0;i<this.worldWidth/gW;i++)
             this.ground.create(i*gW+gW/2,this.worldHeight,'ground')
                 .setOrigin(0.5,1).refreshBody();
 
-        this.staticPlatforms=this.physics.add.staticGroup();
-        this.movingPlatforms=this.physics.add.group({allowGravity:false,immovable:true});
+        // Платформи
+        this.staticPlatforms = this.physics.add.staticGroup();
+        this.movingPlatforms = this.physics.add.group({allowGravity:false,immovable:true});
         this.spawnPlatforms();
 
-        this.player=new Player(this,200,300);
+        // Гравець
+        this.player = new Player(this,200,300,this.selectedPlayer+'_idle');
         this.physics.add.collider(this.player,this.ground);
         this.physics.add.collider(this.player,this.staticPlatforms);
         this.physics.add.collider(this.player,this.movingPlatforms);
 
         // HP UI
-        this.hpIcons=[];
+        this.hpIcons = [];
         for(let i=0;i<this.maxHP;i++)
-            this.hpIcons.push(
-                this.add.image(20+i*40,100,'heart')
-                    .setScrollFactor(0).setScale(0.45)
-            );
+            this.hpIcons.push(this.add.image(20+i*40,100,'heart').setScrollFactor(0).setScale(0.45));
 
-        // Enemies
-        this.enemies=this.physics.add.group();
+        // Вороги
+        this.enemies = this.physics.add.group();
         for(let i=0;i<6;i++)
             this.enemies.add(new Enemy(this,700+i*500,300,e));
 
         this.physics.add.collider(this.enemies,this.ground);
         this.physics.add.collider(this.enemies,this.staticPlatforms);
-        this.physics.add.collider(
-            this.player,this.enemies,
-            this.handleEnemyCollision,null,this
-        );
+        this.physics.add.collider(this.player,this.enemies,this.handleEnemyCollision,null,this);
 
-        // Hearts to collect
-        this.hearts=this.physics.add.staticGroup();
+        // Серця
+        this.hearts = this.physics.add.staticGroup();
         this.spawnHeartsSafe(25);
+
+        this.heartText = this.add.text(20,60,'❤️ 0 / 25',{fontSize:'32px',fill:'#e8d9b0'}).setScrollFactor(0);
+
         this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
             h.destroy();
             this.collectSound.play();
@@ -343,43 +323,21 @@ class GameScene extends Phaser.Scene {
             if(this.heartsCollected===25) this.winText.setAlpha(1);
         });
 
-        this.heartText=this.add.text(20,60,'❤️ 0 / 25',{
-            fontSize:'32px',fill:'#e8d9b0'
-        }).setScrollFactor(0);
-
-        this.winText=this.add.text(
-            this.cameras.main.centerX,
-            this.cameras.main.centerY,
+        this.winText = this.add.text(this.cameras.main.centerX,this.cameras.main.centerY,
             'ALL 25 HEARTS\nCOLLECTED!',
             {fontFamily:'UnifrakturCook',fontSize:'96px',fill:'#fff2c1',align:'center'}
         ).setOrigin(0.5).setScrollFactor(0).setAlpha(0);
 
         // Game Over UI
-        this.gameOverGroup=this.add.container(
-            this.cameras.main.centerX,
-            this.cameras.main.centerY
-        ).setScrollFactor(0).setAlpha(0);
+        this.gameOverGroup = this.add.container(this.cameras.main.centerX,this.cameras.main.centerY)
+            .setScrollFactor(0).setAlpha(0);
 
-        const dieText=this.add.text(0,-80,'YOU DIE!',{
-            fontFamily:'UnifrakturCook',
-            fontSize:'96px',
-            fill:'#ff6b6b'
-        }).setOrigin(0.5);
+        const dieText = this.add.text(0,-80,'YOU DIE!',{fontFamily:'UnifrakturCook',fontSize:'96px',fill:'#ff6b6b'}).setOrigin(0.5);
+        const retry = this.add.text(0,20,'PLAY',{fontFamily:'UnifrakturCook',fontSize:'48px',fill:'#e8d9b0'}).setOrigin(0.5);
+        const menu = this.add.text(0,90,'MENU',{fontFamily:'UnifrakturCook',fontSize:'48px',fill:'#e8d9b0'}).setOrigin(0.5);
 
-        const retry=this.add.text(0,20,'PLAY',{
-            fontFamily:'UnifrakturCook',
-            fontSize:'48px',
-            fill:'#e8d9b0'
-        }).setOrigin(0.5).setInteractive();
-
-        const menu=this.add.text(0,90,'MENU',{
-            fontFamily:'UnifrakturCook',
-            fontSize:'48px',
-            fill:'#e8d9b0'
-        }).setOrigin(0.5).setInteractive();
-
-        retry.on('pointerdown',()=>this.scene.restart({player:this.selectedPlayer}));
-        menu.on('pointerdown',()=>this.scene.start('MenuScene'));
+        retry.setInteractive().on('pointerdown',()=>this.scene.restart({player:this.selectedPlayer}));
+        menu.setInteractive().on('pointerdown',()=>this.scene.start('MenuScene'));
 
         this.gameOverGroup.add([dieText,retry,menu]);
 
@@ -391,9 +349,20 @@ class GameScene extends Phaser.Scene {
     }
 
     handleEnemyCollision(player,enemy){
-        if(player.body.velocity.y>0 && player.y<enemy.y-20){
-            enemy.disableBody(true,true);
+        if(player.body.velocity.y>0 && player.y < enemy.y - 20){
+            enemy.destroy();
             player.setVelocityY(-350);
+
+            if(Math.random()<0.5){
+                const h = this.hearts.create(enemy.x, enemy.y-50, 'heart').setDisplaySize(50,50);
+                this.physics.add.overlap(this.player,h,(p,h)=>{
+                    h.destroy();
+                    this.collectSound.play();
+                    this.heartsCollected++;
+                    this.heartText.setText(`❤️ ${this.heartsCollected} / 25`);
+                    if(this.heartsCollected===25) this.winText.setAlpha(1);
+                });
+            }
         } else this.onPlayerHit(player,enemy);
     }
 
@@ -402,27 +371,23 @@ class GameScene extends Phaser.Scene {
         this.isInvulnerable=true;
 
         this.hp--;
-        if(this.hpIcons[this.hp])
-            this.hpIcons[this.hp].setAlpha(0.3);
+        if(this.hpIcons[this.hp]) this.hpIcons[this.hp].setAlpha(0.3);
 
-        this.tweens.add({
-            targets:player,
-            alpha:0,
-            duration:80,
-            yoyo:true,
-            repeat:8
-        });
+        this.tweens.add({targets:player,alpha:0,duration:80,yoyo:true,repeat:8});
 
         this.time.delayedCall(900,()=>{
             this.isInvulnerable=false;
             player.setAlpha(1);
         });
 
-        if(this.hp<=0){
+        if(this.hp <= 0){
             player.setVelocity(0,0);
             player.anims.stop();
             this.physics.pause();
+
             this.gameOverGroup.setAlpha(1);
+            this.gameOverGroup.iterate(child=>child.setInteractive());
+            this.input.enabled = true;
         }
     }
 
@@ -450,10 +415,7 @@ class GameScene extends Phaser.Scene {
 
     spawnHeartsSafe(count){
         const hearts=[];
-        const platforms=[
-            ...this.staticPlatforms.getChildren(),
-            ...this.movingPlatforms.getChildren()
-        ];
+        const platforms=[...this.staticPlatforms.getChildren(),...this.movingPlatforms.getChildren()];
 
         while(hearts.length<count){
             const x=Phaser.Math.Between(200,this.worldWidth-200);
@@ -461,10 +423,8 @@ class GameScene extends Phaser.Scene {
             const rect=new Phaser.Geom.Rectangle(x-25,y-25,50,50);
 
             let bad=false;
-            for(const h of hearts)
-                if(Phaser.Geom.Intersects.RectangleToRectangle(rect,h)) bad=true;
-            for(const p of platforms)
-                if(Phaser.Geom.Intersects.RectangleToRectangle(rect,p.getBounds())) bad=true;
+            for(const h of hearts) if(Phaser.Geom.Intersects.RectangleToRectangle(rect,h)) bad=true;
+            for(const p of platforms) if(Phaser.Geom.Intersects.RectangleToRectangle(rect,p.getBounds())) bad=true;
 
             if(!bad){
                 this.hearts.create(x,y,'heart').setDisplaySize(50,50).refreshBody();
@@ -478,43 +438,5 @@ class GameScene extends Phaser.Scene {
         const makeBtn=(x,y,key)=>{
             const b=this.add.image(x,y,key).setScrollFactor(0)
                 .setAlpha(0.55).setInteractive();
-            b.on('pointerdown',()=>b.setAlpha(0.85));
-            b.on('pointerup',()=>b.setAlpha(0.55));
-            b.on('pointerout',()=>b.setAlpha(0.55));
-            return b;
-        };
-
-        const l=makeBtn(130,height-120,'btn_left');
-        l.on('pointerdown',()=>this.player.touchLeft=true);
-        l.on('pointerup',()=>this.player.touchLeft=false);
-        l.on('pointerout',()=>this.player.touchLeft=false);
-
-        const r=makeBtn(260,height-120,'btn_right');
-        r.on('pointerdown',()=>this.player.touchRight=true);
-        r.on('pointerup',()=>this.player.touchRight=false);
-        r.on('pointerout',()=>this.player.touchRight=false);
-
-        const j=makeBtn(width-140,height-120,'btn_jump');
-        j.on('pointerdown',()=>this.player.touchJump=true);
-        j.on('pointerup',()=>this.player.touchJump=false);
-        j.on('pointerout',()=>this.player.touchJump=false);
-    }
-
-    update(){
-        this.bg.tilePositionX=this.cameras.main.scrollX;
-        this.movingPlatforms.getChildren().forEach(p=>{
-            if(p.y>p.startY+p.range) p.body.setVelocityY(-p.speed);
-            if(p.y<p.startY-p.range) p.body.setVelocityY(p.speed);
-        });
-    }
-}
-
-// ======================= CONFIG =======================
-new Phaser.Game({
-    type:Phaser.AUTO,
-    width:1248,
-    height:832,
-    scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
-    physics:{default:'arcade',arcade:{gravity:{y:900},debug:false}},
-    scene:[MenuScene,SelectScene,GameScene]
-});
+            b.on('pointerdown',()=>b.set
+::contentReference[oaicite:0]{index=0}
