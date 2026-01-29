@@ -31,31 +31,33 @@ class MenuScene extends Phaser.Scene {
         this.bgMid  = this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
         this.bgNear = this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
-        const titleStyle = { fontFamily:'UnifrakturCook', fontSize:'120px', fill:'#e8d9b0' };
-        const optionStyle = { fontFamily:'UnifrakturCook', fontSize:'56px', fill:'#e8d9b0' };
+        // Чекаємо, поки шрифт завантажиться
+        document.fonts.ready.then(()=>{
+            const titleStyle = { fontFamily:'UnifrakturCook', fontSize:'120px', fill:'#e8d9b0' };
+            const optionStyle = { fontFamily:'UnifrakturCook', fontSize:'56px', fill:'#e8d9b0' };
 
-        this.add.text(width/2,height/3,'Pink Yupik Arcade', titleStyle).setOrigin(0.5);
+            this.add.text(width/2,height/3,'Pink Yupik Arcade', titleStyle).setOrigin(0.5);
 
-        this.playBtn = this.add.text(width/2,height/2,'PLAY',optionStyle)
-            .setOrigin(0.5)
-            .setInteractive()
-            .on('pointerdown',()=>this.scene.start('SelectScene'));
+            this.playBtn = this.add.text(width/2,height/2,'PLAY',optionStyle)
+                .setOrigin(0.5)
+                .setInteractive()
+                .on('pointerdown',()=>this.scene.start('SelectScene'));
 
-        this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',optionStyle)
-            .setOrigin(0.5)
-            .setInteractive()
-            .on('pointerdown',()=>{
-                if(window.Telegram?.WebApp) window.Telegram.WebApp.close();
+            this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',optionStyle)
+                .setOrigin(0.5)
+                .setInteractive()
+                .on('pointerdown',()=>{
+                    if(window.Telegram?.WebApp) window.Telegram.WebApp.close();
+                });
+
+            this.tweens.add({
+                targets:[this.playBtn,this.exitBtn],
+                scale:1.1,
+                duration:600,
+                yoyo:true,
+                repeat:-1,
+                ease:'Sine.easeInOut'
             });
-
-        // Анімація кнопок
-        this.tweens.add({
-            targets:[this.playBtn,this.exitBtn],
-            scale:1.1,
-            duration:600,
-            yoyo:true,
-            repeat:-1,
-            ease:'Sine.easeInOut'
         });
     }
 
@@ -83,34 +85,36 @@ class SelectScene extends Phaser.Scene {
 
     create(){
         const {width,height} = this.scale;
-        const titleStyle = { fontFamily:'UnifrakturCook', fontSize:'64px', fill:'#e8d9b0' };
-        const optionStyle = { fontFamily:'UnifrakturCook', fontSize:'56px', fill:'#e8d9b0' };
 
         this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
         this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
         this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
-        this.add.text(width/2,120,'Select Character', titleStyle).setOrigin(0.5);
+        document.fonts.ready.then(()=>{
+            const titleStyle = { fontFamily:'UnifrakturCook', fontSize:'64px', fill:'#e8d9b0' };
 
-        const y = height/2 + 120;
-        this.add.image(width/2-220,y,'platform');
-        this.add.image(width/2+220,y,'platform');
+            this.add.text(width/2,120,'Select Character', titleStyle).setOrigin(0.5);
 
-        const p1=this.add.image(width/2-220,y-110,'player1_idle')
-            .setInteractive()
-            .on('pointerdown',()=>this.scene.start('GameScene',{player:'player1'}));
+            const y = height/2 + 120;
+            this.add.image(width/2-220,y,'platform');
+            this.add.image(width/2+220,y,'platform');
 
-        const p2=this.add.image(width/2+220,y-110,'player2_idle')
-            .setInteractive()
-            .on('pointerdown',()=>this.scene.start('GameScene',{player:'player2'}));
+            const p1=this.add.image(width/2-220,y-110,'player1_idle')
+                .setInteractive()
+                .on('pointerdown',()=>this.scene.start('GameScene',{player:'player1'}));
 
-        this.tweens.add({
-            targets:[p1,p2],
-            scale:1.1,
-            duration:600,
-            yoyo:true,
-            repeat:-1,
-            ease:'Sine.easeInOut'
+            const p2=this.add.image(width/2+220,y-110,'player2_idle')
+                .setInteractive()
+                .on('pointerdown',()=>this.scene.start('GameScene',{player:'player2'}));
+
+            this.tweens.add({
+                targets:[p1,p2],
+                scale:1.1,
+                duration:600,
+                yoyo:true,
+                repeat:-1,
+                ease:'Sine.easeInOut'
+            });
         });
     }
 }
@@ -220,11 +224,10 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.isDead=true;
         this.disableBody(true,true);
 
-        // маленьке серце для відновлення HP
         const h = this.scene.physics.add.image(this.x, this.y - 20, 'heart_small')
             .setScale(0.4)
             .setBounce(0.4)
-            .setVelocity(Phaser.Math.Between(-80, 80), -260)
+            .setVelocity(Phaser.Math.Between(-80,80), -260)
             .setCollideWorldBounds(true);
 
         this.scene.physics.add.collider(h,this.scene.ground);
@@ -272,12 +275,12 @@ class GameScene extends Phaser.Scene {
         for(let i=1;i<=4;i++)
             this.load.image(`pf${i}`,'assets/platforms/platform_'+i+'.png');
 
-        this.load.image('heart_collect','assets/items/heart_v4.png'); // великі серця
-        this.load.image('heart_small','assets/items/heart_small.png');  // малі серця
+        this.load.image('heart_collect','assets/items/heart_v4.png');
+        this.load.image('heart_small','assets/items/heart_small.png');
     }
 
     create(){
-        /* ANIMS */
+        // ANIMS
         this.anims.create({key:'idle',frames:[{key:`${this.selectedPlayer}_idle`}],repeat:-1});
         this.anims.create({key:'walk',frames:this.anims.generateFrameNumbers(`${this.selectedPlayer}_walk`),frameRate:10,repeat:-1});
         this.anims.create({key:`${this.enemyType}_idle`,frames:[{key:`${this.enemyType}_idle`}],repeat:-1});
@@ -286,19 +289,18 @@ class GameScene extends Phaser.Scene {
         this.physics.world.setBounds(0,0,this.worldWidth,this.worldHeight);
         this.bg=this.add.tileSprite(0,0,this.worldWidth,832,'bg').setOrigin(0);
 
-        /* GROUND */
+        // GROUND
         this.ground=this.physics.add.staticGroup();
         const gW=this.textures.get('ground').getSourceImage().width;
         for(let i=0;i<this.worldWidth/gW;i++)
-            this.ground.create(i*gW+gW/2,this.worldHeight,'ground')
-                .setOrigin(0.5,1).refreshBody();
+            this.ground.create(i*gW+gW/2,this.worldHeight,'ground').setOrigin(0.5,1).refreshBody();
 
-        /* PLATFORMS */
+        // PLATFORMS
         this.platforms=this.physics.add.staticGroup();
         this.movingPlatforms=this.physics.add.group({allowGravity:false,immovable:true});
         this.spawnPlatformsSafe();
 
-        /* PLAYER */
+        // PLAYER
         this.player=new Player(this,200,620,`${this.selectedPlayer}_idle`);
         this.physics.add.collider(this.player,this.ground);
         this.physics.add.collider(this.player,this.platforms);
@@ -308,23 +310,24 @@ class GameScene extends Phaser.Scene {
             this.createMobileButtons();
         }
 
-        /* CAMERA */
+        // CAMERA
         this.cameras.main.startFollow(this.player,true,0.12,0.12);
         this.cameras.main.setBounds(0,0,this.worldWidth,this.worldHeight);
 
-        /* UI */
-        this.hpIcons=[];
-        for(let i=0;i<this.maxHP;i++)
-            this.hpIcons.push(this.add.image(20+i*40,100,'heart_small').setScrollFactor(0).setScale(0.3));
+        // UI
+        document.fonts.ready.then(()=>{
+            this.hpIcons=[];
+            for(let i=0;i<this.maxHP;i++)
+                this.hpIcons.push(this.add.image(20+i*40,100,'heart_small').setScrollFactor(0).setScale(0.3));
 
-        this.heartText=this.add.text(20,60,`❤️ 0 / ${this.totalHearts}`,{
-            fontSize:'32px',fill:'#e8d9b0', fontFamily:'UnifrakturCook'
-        }).setScrollFactor(0);
+            this.heartText=this.add.text(20,60,`❤️ 0 / ${this.totalHearts}`,{
+                fontSize:'32px',fill:'#e8d9b0', fontFamily:'UnifrakturCook'
+            }).setScrollFactor(0);
+        });
 
-        /* HEARTS (великий рахунок) */
+        // HEARTS (великий рахунок)
         this.hearts = this.physics.add.staticGroup();
         this.spawnHeartsSafe(this.totalHearts);
-
         this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
             h.destroy();
             this.heartsCollected++;
@@ -334,10 +337,10 @@ class GameScene extends Phaser.Scene {
             }
         });
 
-        /* ENEMIES */
+        // ENEMIES
         this.enemies = this.physics.add.group();
         for(let i=0;i<5;i++)
-            this.enemies.add(new Enemy(this, 800+i*900, 620, this.enemyType));
+            this.enemies.add(new Enemy(this,800+i*900,620,this.enemyType));
 
         this.physics.add.collider(this.enemies,this.ground);
         this.physics.add.collider(this.enemies,this.platforms);
@@ -357,7 +360,6 @@ class GameScene extends Phaser.Scene {
         this.hp--;
         if(this.hp<0) this.hp=0;
         this.hpIcons[this.hp]?.setAlpha(0);
-
         if(this.hp<=0){
             this.scene.start('LoseScene',{player:this.selectedPlayer});
         }
@@ -376,8 +378,7 @@ class GameScene extends Phaser.Scene {
         const plats=this.platforms.getChildren();
         for(let i=0;i<count;i++){
             const p=Phaser.Utils.Array.GetRandom(plats);
-            this.hearts.create(p.x,p.getBounds().top-30,'heart_collect')
-                .setScale(0.45).refreshBody();
+            this.hearts.create(p.x,p.getBounds().top-30,'heart_collect').setScale(0.45).refreshBody();
         }
     }
 
@@ -412,33 +413,35 @@ class EndScene extends Phaser.Scene {
 
     create(data){
         const {width,height}=this.scale;
-        const style={ fontFamily:'UnifrakturCook', fontSize:'56px', fill:'#e8d9b0' };
+        document.fonts.ready.then(()=>{
+            const style={ fontFamily:'UnifrakturCook', fontSize:'56px', fill:'#e8d9b0' };
 
-        this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
-        this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
-        this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
+            this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
+            this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
+            this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
-        this.add.text(width/2,height/3,this.label,{
-            fontFamily:'UnifrakturCook', fontSize:'96px', fill:'#e8d9b0'
-        }).setOrigin(0.5);
+            this.add.text(width/2,height/3,this.label,{
+                fontFamily:'UnifrakturCook', fontSize:'96px', fill:'#e8d9b0'
+            }).setOrigin(0.5);
 
-        this.playBtn = this.add.text(width/2,height/2,'PLAY',style)
-            .setOrigin(0.5)
-            .setInteractive()
-            .on('pointerdown',()=>this.scene.start('GameScene',{player:data.player}));
+            this.playBtn = this.add.text(width/2,height/2,'PLAY',style)
+                .setOrigin(0.5)
+                .setInteractive()
+                .on('pointerdown',()=>this.scene.start('GameScene',{player:data.player}));
 
-        this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',style)
-            .setOrigin(0.5)
-            .setInteractive()
-            .on('pointerdown',()=>this.scene.start('MenuScene'));
+            this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',style)
+                .setOrigin(0.5)
+                .setInteractive()
+                .on('pointerdown',()=>this.scene.start('MenuScene'));
 
-        this.tweens.add({
-            targets:[this.playBtn,this.exitBtn],
-            scale:1.1,
-            duration:600,
-            yoyo:true,
-            repeat:-1,
-            ease:'Sine.easeInOut'
+            this.tweens.add({
+                targets:[this.playBtn,this.exitBtn],
+                scale:1.1,
+                duration:600,
+                yoyo:true,
+                repeat:-1,
+                ease:'Sine.easeInOut'
+            });
         });
     }
 }
