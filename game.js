@@ -189,11 +189,14 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.chaseRange=420;
         this.stopRange=60;
 
+        this.isDead = false;
+
         this.play('enemy_idle');
     }
 
     preUpdate(time,delta){
         super.preUpdate(time,delta);
+        if(this.isDead) return; // ворог не рухається якщо мертвий
 
         const p=this.scene.player;
         if(!p) return;
@@ -343,21 +346,28 @@ class GameScene extends Phaser.Scene {
         this.createTouchControls();
     }
 
+    // ======================= Ворог і серце =======================
     handleEnemyCollision(player, enemy) {
-        if(player.body.velocity.y > 0 && player.y < enemy.y - 20){
-            enemy.destroy();
+        if(player.body.velocity.y > 0 && player.y < enemy.y - 20 && !enemy.isDead) {
+            enemy.isDead = true;
+            enemy.disableBody(true,true);
+
             player.setVelocityY(-350);
 
-            // Падаюче серце з анімацією
             const heart = this.physics.add.sprite(enemy.x, enemy.y-50,'heart').setDisplaySize(40,40);
             heart.body.setAllowGravity(true);
             heart.body.setGravityY(300);
+
+            // Обертання серця
+            this.tweens.add({targets: heart, angle: 360, duration: 1000, repeat: -1});
+
             this.physics.add.overlap(this.player, heart, (p,h)=>{
                 h.destroy();
                 this.collectSound.play();
                 this.hp = Math.min(this.hp+1, this.maxHP);
                 this.updateHPUI();
             });
+
         } else this.onPlayerHit(player, enemy);
     }
 
