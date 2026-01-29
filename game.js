@@ -120,8 +120,8 @@ class SelectScene extends Phaser.Scene {
 
 // ======================= PLAYER ========================
 class Player extends Phaser.Physics.Arcade.Sprite {
-    constructor(scene, x, y) {
-        super(scene, x, y, 'idle');
+    constructor(scene, x, y, key) {
+        super(scene, x, y, key);
         scene.add.existing(this);
         scene.physics.add.existing(this);
 
@@ -158,7 +158,7 @@ class Player extends Phaser.Physics.Arcade.Sprite {
 
         if(l){ this.setAccelerationX(-this.accel); this.facing='left'; }
         else if(r){ this.setAccelerationX(this.accel); this.facing='right'; }
-        else this.setAccelerationX(0);
+        else { this.setAccelerationX(0); if(this.walkSound.isPlaying) this.walkSound.stop(); }
 
         if(
             (Phaser.Input.Keyboard.JustDown(this.keys.up) ||
@@ -330,7 +330,7 @@ class GameScene extends Phaser.Scene {
         this.spawnPlatforms();
 
         // Гравець
-        this.player=new Player(this,200,300);
+        this.player=new Player(this,200,300,`${this.selectedPlayer}_idle`);
         this.physics.add.collider(this.player,this.ground);
         this.physics.add.collider(this.player,this.staticPlatforms);
         this.physics.add.collider(this.player,this.movingPlatforms);
@@ -351,12 +351,12 @@ class GameScene extends Phaser.Scene {
         // Великі серця
         this.hearts=this.physics.add.staticGroup();
         this.spawnHeartsSafe(25);
-        this.heartText=this.add.text(20,60,'?? 0 / 25',{fontSize:'32px',fill:'#e8d9b0'}).setScrollFactor(0);
+        this.heartText=this.add.text(20,60,'❤️ 0 / 25',{fontSize:'32px',fill:'#e8d9b0'}).setScrollFactor(0);
         this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
             h.destroy();
             this.collectSound.play();
             this.heartsCollected++;
-            this.heartText.setText(`?? ${this.heartsCollected} / 25`);
+            this.heartText.setText(`❤️ ${this.heartsCollected} / 25`);
             if(this.heartsCollected===25) this.showEndScreen(true);
         });
 
