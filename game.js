@@ -322,11 +322,14 @@ class GameScene extends Phaser.Scene {
         this.physics.add.collider(this.enemies,this.ground);
         this.physics.add.collider(this.enemies,this.platforms);
 
+        // КОЛАЙДЕР ГРАВЕЦЬ ↔ ВОРОГ
         this.physics.add.collider(this.player,this.enemies,(p,e)=>{
-            if(!e.isDead && p.body.velocity.y>0 && p.y<e.y){
+            if(e.isDead) return;
+            const isFallingOnTop = p.body.velocity.y > 0 && (p.y + p.body.height/2) < (e.y - e.body.height/4);
+            if(isFallingOnTop){
                 e.die();
                 p.setVelocityY(-350);
-            } else if(!e.isDead){
+            } else {
                 this.damage();
             }
         });
@@ -339,29 +342,29 @@ class GameScene extends Phaser.Scene {
     update(){
         this.bg.tilePositionX=this.cameras.main.scrollX*0.3;
 
-        // enemies
+        // ENEMIES: патрулювання всього рівня
         this.enemies.getChildren().forEach(e=>{
             if(e.isDead) return;
-            const p=this.player;
-            const dist=Phaser.Math.Distance.Between(e.x,e.y,p.x,p.y);
+            const p = this.player;
+            const dist = Phaser.Math.Distance.Between(e.x,e.y,p.x,p.y);
 
-            if(dist < 450){
-                const dir = p.x<e.x?-1:1;
-                e.setFlipX(dir<0);
-                e.setVelocityX(dir*e.speed);
-            } else {
-                e.setVelocityX(e.direction*e.speed);
-                if(e.x<0 || e.x>this.worldWidth) e.direction*=-1;
+            let targetDir = e.direction;
+            if(dist < 450) targetDir = p.x < e.x ? -1 : 1;
+
+            // межі рівня
+            if(e.x + targetDir * e.speed * this.game.loop.delta/1000 <= 0 ||
+               e.x + targetDir * e.speed * this.game.loop.delta/1000 >= this.worldWidth){
+                e.direction *= -1;
+                targetDir = e.direction;
             }
 
+            e.setVelocityX(targetDir * e.speed);
+            e.setFlipX(targetDir < 0);
             if(Math.abs(e.body.velocity.x)>5) e.anims.play(`${e.type}_walk`,true);
-            else {
-                e.anims.play(`${e.type}_idle`,true);
-                e.y += Math.sin(this.time.now/300) * 0.2; // плавна анімація
-            }
+            else e.anims.play(`${e.type}_idle`,true);
         });
 
-        // moving platforms
+        // рухомі платформи
         this.movingPlatformsList.forEach(pf=>{
             pf.y += pf.speed * pf.direction * this.game.loop.delta/1000;
             if(pf.y<260 || pf.y>480) pf.direction*=-1;
@@ -417,9 +420,9 @@ class GameScene extends Phaser.Scene {
     }
 
     createMobileButtons(){
-        const left=this.add.image(60,this.scale.height-80,'left_btn').setScrollFactor(0).setInteractive();
-        const right=this.add.image(160,this.scale.height-80,'right_btn').setScrollFactor(0).setInteractive();
-        const jump=this.add.image(this.scale.width-80,this.scale.height-80,'jump_btn').setScrollFactor(0).setInteractive();
+        const left=this.add.image(60,this.scale.height-80,'left_btn').setInteractive().setScrollFactor(0);
+        const right=this.add.image(160,this.scale.height-80,'right_btn').setInteractive().setScrollFactor(0);
+        const jump=this.add.image(this.scale.width-80,this.scale.height-80,'jump_btn').setInteractive().setScrollFactor(0);
 
         [left,right,jump].forEach(btn=>this.tweens.add({targets:btn,scale:1.1,duration:600,yoyo:true,repeat:-1,ease:'Sine.easeInOut'}));
 
