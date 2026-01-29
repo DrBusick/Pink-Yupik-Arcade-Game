@@ -29,10 +29,9 @@ class MenuScene extends Phaser.Scene {
 
         const title = this.add.text(width / 2, height / 4, 'Pink Yupik Arcade', {
             fontFamily: 'UnifrakturCook',
-            fontSize: '144px',
+            fontSize: Math.round(height*0.15)+'px',
             fill: '#e8d9b0'
         }).setOrigin(0.5);
-
         title.setShadow(0, 0, '#fff2c1', 20, true, true);
 
         this.tweens.add({
@@ -43,7 +42,7 @@ class MenuScene extends Phaser.Scene {
             ease: 'Sine.easeInOut'
         });
 
-        const btnStyle = { fontFamily: 'UnifrakturCook', fontSize: '56px', fill: '#e8d9b0' };
+        const btnStyle = { fontFamily: 'UnifrakturCook', fontSize: Math.round(height*0.07)+'px', fill: '#e8d9b0' };
 
         const play = this.add.text(width/2, height/2 - 60, 'PLAY', btnStyle)
             .setOrigin(0.5).setInteractive({ useHandCursor:true });
@@ -92,20 +91,22 @@ class SelectScene extends Phaser.Scene {
         this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
         this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
-        this.add.text(width/2,120,'Select Character',{
-            fontFamily:'UnifrakturCook',fontSize:'64px',fill:'#e8d9b0'
+        this.add.text(width/2, height*0.15,'Select Character',{
+            fontFamily:'UnifrakturCook',
+            fontSize: Math.round(height*0.08)+'px',
+            fill:'#e8d9b0'
         }).setOrigin(0.5);
 
-        const baseY = height / 2 + 90;
-        this.add.image(width/2 - 220, baseY, 'select_platform').setScale(1.1);
-        this.add.image(width/2 + 220, baseY, 'select_platform').setScale(1.1);
+        const baseY = height/2 + 0.11*height;
+        this.add.image(width/2 - 0.18*width, baseY, 'select_platform').setScale(1.1);
+        this.add.image(width/2 + 0.18*width, baseY, 'select_platform').setScale(1.1);
 
-        this.add.image(width/2 - 220, baseY - 110, 'p1_idle')
+        this.add.image(width/2 - 0.18*width, baseY - 110, 'p1_idle')
             .setScale(1.2)
             .setInteractive()
             .on('pointerdown',()=>this.scene.start('GameScene',{player:'player1'}));
 
-        this.add.image(width/2 + 220, baseY - 110, 'p2_idle')
+        this.add.image(width/2 + 0.18*width, baseY - 110, 'p2_idle')
             .setScale(1.2)
             .setInteractive()
             .on('pointerdown',()=>this.scene.start('GameScene',{player:'player2'}));
@@ -196,7 +197,7 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     preUpdate(time,delta){
         super.preUpdate(time,delta);
-        if(this.isDead) return; // ворог не рухається якщо мертвий
+        if(this.isDead) return;
 
         const p=this.scene.player;
         if(!p) return;
@@ -296,8 +297,9 @@ class GameScene extends Phaser.Scene {
 
         // HP UI
         this.hpIcons = [];
+        const {width,height} = this.scale;
         for(let i=0;i<this.maxHP;i++)
-            this.hpIcons.push(this.add.image(20+i*40,100,'heart').setScrollFactor(0).setScale(0.45));
+            this.hpIcons.push(this.add.image(width*0.02 + i*width*0.04,height*0.07,'heart').setScrollFactor(0).setScale(0.45));
 
         // Вороги
         this.enemies = this.physics.add.group();
@@ -312,27 +314,21 @@ class GameScene extends Phaser.Scene {
         this.hearts = this.physics.add.staticGroup();
         this.spawnHeartsSafe(25);
 
-        this.heartText = this.add.text(20,60,'❤️ 0 / 25',{fontSize:'32px',fill:'#e8d9b0'}).setScrollFactor(0);
+        this.heartText = this.add.text(width*0.02,height*0.03,`❤️ ${this.heartsCollected} / 25`,{
+            fontSize: Math.round(height*0.04)+'px', fill:'#e8d9b0'
+        }).setScrollFactor(0);
 
-        this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
-            h.destroy();
-            this.collectSound.play();
-            this.heartsCollected++;
-            this.heartText.setText(`❤️ ${this.heartsCollected} / 25`);
-        });
-
-        this.winText = this.add.text(this.cameras.main.centerX,this.cameras.main.centerY,
+        this.winText = this.add.text(width/2,height/2,
             'ALL 25 HEARTS\nCOLLECTED!',
-            {fontFamily:'UnifrakturCook',fontSize:'96px',fill:'#fff2c1',align:'center'}
+            {fontFamily:'UnifrakturCook',fontSize:Math.round(height*0.12)+'px',fill:'#fff2c1',align:'center'}
         ).setOrigin(0.5).setScrollFactor(0).setAlpha(0);
 
         // Game Over UI
-        this.gameOverGroup = this.add.container(this.cameras.main.centerX,this.cameras.main.centerY)
-            .setScrollFactor(0).setAlpha(0);
+        this.gameOverGroup = this.add.container(width/2,height/2).setScrollFactor(0).setAlpha(0);
 
-        const dieText = this.add.text(0,-80,'YOU DIE!',{fontFamily:'UnifrakturCook',fontSize:'96px',fill:'#ff6b6b'}).setOrigin(0.5);
-        const retry = this.add.text(0,20,'PLAY',{fontFamily:'UnifrakturCook',fontSize:'48px',fill:'#e8d9b0'}).setOrigin(0.5);
-        const menu = this.add.text(0,90,'MENU',{fontFamily:'UnifrakturCook',fontSize:'48px',fill:'#e8d9b0'}).setOrigin(0.5);
+        const dieText = this.add.text(0,-80,'YOU DIE!',{fontFamily:'UnifrakturCook',fontSize:Math.round(height*0.12)+'px',fill:'#ff6b6b'}).setOrigin(0.5);
+        const retry = this.add.text(0,20,'PLAY',{fontFamily:'UnifrakturCook',fontSize:Math.round(height*0.06)+'px',fill:'#e8d9b0'}).setOrigin(0.5);
+        const menu = this.add.text(0,90,'MENU',{fontFamily:'UnifrakturCook',fontSize:Math.round(height*0.06)+'px',fill:'#e8d9b0'}).setOrigin(0.5);
 
         retry.setInteractive().on('pointerdown',()=>this.scene.restart({player:this.selectedPlayer}));
         menu.setInteractive().on('pointerdown',()=>this.scene.start('MenuScene'));
@@ -358,7 +354,6 @@ class GameScene extends Phaser.Scene {
             heart.body.setAllowGravity(true);
             heart.body.setGravityY(300);
 
-            // Обертання серця
             this.tweens.add({targets: heart, angle: 360, duration: 1000, repeat: -1});
 
             this.physics.add.overlap(this.player, heart, (p,h)=>{
@@ -436,25 +431,31 @@ class GameScene extends Phaser.Scene {
 
     createTouchControls(){
         const { width, height } = this.scale;
-        const makeBtn=(x,y,key)=>{
-            const b=this.add.image(x,y,key).setScrollFactor(0).setAlpha(0.55).setInteractive();
+        const btnSize = Math.min(width,height)*0.1;
+
+        const makeBtn=(xPerc,yPerc,key)=>{
+            const b = this.add.image(width*xPerc, height*yPerc,key)
+                .setScrollFactor(0)
+                .setDisplaySize(btnSize,btnSize)
+                .setAlpha(0.55)
+                .setInteractive();
             b.on('pointerdown',()=>b.setAlpha(0.85));
             b.on('pointerup',()=>b.setAlpha(0.55));
             b.on('pointerout',()=>b.setAlpha(0.55));
             return b;
         };
 
-        const l=makeBtn(130,height-120,'btn_left');
+        const l=makeBtn(0.1,0.85,'btn_left');
         l.on('pointerdown',()=>this.player.touchLeft=true);
         l.on('pointerup',()=>this.player.touchLeft=false);
         l.on('pointerout',()=>this.player.touchLeft=false);
 
-        const r=makeBtn(260,height-120,'btn_right');
+        const r=makeBtn(0.22,0.85,'btn_right');
         r.on('pointerdown',()=>this.player.touchRight=true);
         r.on('pointerup',()=>this.player.touchRight=false);
         r.on('pointerout',()=>this.player.touchRight=false);
 
-        const j=makeBtn(width-140,height-120,'btn_jump');
+        const j=makeBtn(0.9,0.85,'btn_jump');
         j.on('pointerdown',()=>this.player.touchJump=true);
         j.on('pointerup',()=>this.player.touchJump=false);
         j.on('pointerout',()=>this.player.touchJump=false);
@@ -471,10 +472,10 @@ class GameScene extends Phaser.Scene {
 
 // ======================= CONFIG =======================
 new Phaser.Game({
-    type:Phaser.AUTO,
-    width:1248,
-    height:832,
-    scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
-    physics:{default:'arcade',arcade:{gravity:{y:900},debug:false}},
-    scene:[MenuScene,SelectScene,GameScene]
+    type: Phaser.AUTO,
+    width: 1248,
+    height: 832,
+    scale: {mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH},
+    physics: {default:'arcade', arcade:{gravity:{y:900}, debug:false}},
+    scene: [MenuScene, SelectScene, GameScene]
 });
