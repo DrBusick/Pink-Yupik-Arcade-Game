@@ -350,7 +350,7 @@ class GameScene extends Phaser.Scene {
 }
 
 /* =========================================================
-   CONFIG
+   CONFIG 
 ========================================================= */
 new Phaser.Game({
     type:Phaser.AUTO,
