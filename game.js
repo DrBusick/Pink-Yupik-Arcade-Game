@@ -28,7 +28,7 @@ class MenuScene extends Phaser.Scene {
         const btnStyle = {fontFamily:'UnifrakturCook', fontSize:Math.round(height*0.07)+'px', fill:'#e8d9b0'};
 
         const play = this.add.text(width/2,height/2-60,'PLAY',btnStyle).setOrigin(0.5).setInteractive({useHandCursor:true});
-        play.on('pointerover',()=>this.hoverSound.play());
+        play.on('pointerover',()=>this.hoverSound.play()); play.setScale(1.15); play.setTint(0xff6b6b);});
         play.on('pointerdown',()=>this.scene.start('SelectScene'));
 
         const exit = this.add.text(width/2,height/2+100,'EXIT',btnStyle).setOrigin(0.5).setInteractive({useHandCursor:true});
