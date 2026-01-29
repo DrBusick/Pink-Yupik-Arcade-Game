@@ -1,18 +1,4 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-<meta charset="UTF-8">
-<title>Pink Yupik Arcade</title>
-<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
-<style>
-html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000; }
-#game-container { width:100%; height:100%; }
-</style>
-</head>
-<body>
-<div id="game-container"></div>
-<script>
-let selectedPlayer='player';
+let selectedPlayer = 'player';
 
 // ======================= MENU SCENE ========================
 class MenuScene extends Phaser.Scene {
