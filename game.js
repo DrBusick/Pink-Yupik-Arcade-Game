@@ -30,20 +30,17 @@ class MenuScene extends Phaser.Scene {
         this.bgMid  = this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
         this.bgNear = this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
-        this.add.text(width/2,height/3,'Pink Yupik Arcade',{
-            fontFamily:'UnifrakturCook',
-            fontSize:'120px',
-            fill:'#e8d9b0'
-        }).setOrigin(0.5);
+        const titleStyle = { fontFamily:'UnifrakturCook', fontSize:'120px', fill:'#e8d9b0' };
+        const optionStyle = { fontFamily:'UnifrakturCook', fontSize:'56px', fill:'#e8d9b0' };
 
-        const style={ fontFamily:'UnifrakturCook', fontSize:'56px', fill:'#e8d9b0' };
+        this.add.text(width/2,height/3,'Pink Yupik Arcade', titleStyle).setOrigin(0.5);
 
-        this.add.text(width/2,height/2,'PLAY',style)
+        this.add.text(width/2,height/2,'PLAY',optionStyle)
             .setOrigin(0.5)
             .setInteractive()
             .on('pointerdown',()=>this.scene.start('SelectScene'));
 
-        this.add.text(width/2,height/2+100,'EXIT',style)
+        this.add.text(width/2,height/2+100,'EXIT',optionStyle)
             .setOrigin(0.5)
             .setInteractive()
             .on('pointerdown',()=>{
@@ -75,19 +72,15 @@ class SelectScene extends Phaser.Scene {
 
     create(){
         const {width,height} = this.scale;
+        const titleStyle = { fontFamily:'UnifrakturCook', fontSize:'64px', fill:'#e8d9b0' };
 
         this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
         this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
         this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
-        this.add.text(width/2,120,'Select Character',{
-            fontFamily:'UnifrakturCook',
-            fontSize:'64px',
-            fill:'#e8d9b0'
-        }).setOrigin(0.5);
+        this.add.text(width/2,120,'Select Character', titleStyle).setOrigin(0.5);
 
         const y = height/2 + 120;
-
         this.add.image(width/2-220,y,'platform');
         this.add.image(width/2+220,y,'platform');
 
@@ -127,7 +120,6 @@ class Player extends Phaser.Physics.Arcade.Sprite {
             left2:'LEFT', right2:'RIGHT', up2:'UP'
         });
 
-        // Mobile controls
         this.moveLeft=false;
         this.moveRight=false;
         this.jump=false;
@@ -254,7 +246,6 @@ class GameScene extends Phaser.Scene {
 
         this.load.image(`${p}_idle`,`assets/${p}/idle.png`);
         this.load.spritesheet(`${p}_walk`,`assets/${p}/walk.png`,{frameWidth:142,frameHeight:142});
-
         this.load.image(`${e}_idle`,`assets/${e}/idle.png`);
         this.load.spritesheet(`${e}_walk`,`assets/${e}/walk.png`,{frameWidth:142,frameHeight:142});
 
@@ -276,7 +267,6 @@ class GameScene extends Phaser.Scene {
         this.anims.create({key:`${this.enemyType}_walk`,frames:this.anims.generateFrameNumbers(`${this.enemyType}_walk`),frameRate:10,repeat:-1});
 
         this.physics.world.setBounds(0,0,this.worldWidth,this.worldHeight);
-
         this.bg=this.add.tileSprite(0,0,this.worldWidth,832,'bg').setOrigin(0);
 
         /* GROUND */
@@ -297,7 +287,6 @@ class GameScene extends Phaser.Scene {
         this.physics.add.collider(this.player,this.platforms);
         this.physics.add.collider(this.player,this.movingPlatforms);
 
-        // ================= MOBILE BUTTONS =================
         if(this.sys.game.device.os.android || this.sys.game.device.os.iOS){
             this.createMobileButtons();
         }
@@ -312,7 +301,7 @@ class GameScene extends Phaser.Scene {
             this.hpIcons.push(this.add.image(20+i*40,100,'heart_collect').setScrollFactor(0).setScale(0.3));
 
         this.heartText=this.add.text(20,60,`❤️ 0 / ${this.totalHearts}`,{
-            fontSize:'32px',fill:'#e8d9b0'
+            fontSize:'32px',fill:'#e8d9b0', fontFamily:'UnifrakturCook'
         }).setScrollFactor(0);
 
         /* ENEMIES */
@@ -365,7 +354,7 @@ class GameScene extends Phaser.Scene {
     showVictoryMessage(){
         const text=this.add.text(this.cameras.main.scrollX+this.cameras.main.width/2,
             this.cameras.main.scrollY+this.cameras.main.height/2,
-            '🎉 Всі серця зібрано! 🎉',{ fontSize:'64px', fill:'#ff0', backgroundColor:'#000'})
+            '🎉 Всі серця зібрано! 🎉',{ fontSize:'64px', fill:'#ff0', backgroundColor:'#000', fontFamily:'UnifrakturCook'})
             .setOrigin(0.5).setDepth(10);
     }
 
@@ -413,18 +402,15 @@ class EndScene extends Phaser.Scene {
 
     create(data){
         const {width,height}=this.scale;
+        const style={ fontFamily:'UnifrakturCook', fontSize:'56px', fill:'#e8d9b0' };
 
         this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
         this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
         this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
         this.add.text(width/2,height/3,this.label,{
-            fontFamily:'UnifrakturCook',
-            fontSize:'96px',
-            fill:'#e8d9b0'
+            fontFamily:'UnifrakturCook', fontSize:'96px', fill:'#e8d9b0'
         }).setOrigin(0.5);
-
-        const style={fontFamily:'UnifrakturCook',fontSize:'56px',fill:'#e8d9b0'};
 
         this.add.text(width/2,height/2,'PLAY',style)
             .setOrigin(0.5)
