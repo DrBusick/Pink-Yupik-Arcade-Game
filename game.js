@@ -262,38 +262,36 @@ class GameScene extends Phaser.Scene {
     create(){
         const {width,height} = this.scale;
 
-        // Анімації гравця та ворога
         this.anims.create({key:'idle',frames:[{key:`${this.selectedPlayer}_idle`}],repeat:-1});
         this.anims.create({key:'walk',frames:this.anims.generateFrameNumbers(`${this.selectedPlayer}_walk`),frameRate:10,repeat:-1});
         this.anims.create({key:`${this.enemyType}_idle`,frames:[{key:`${this.enemyType}_idle`}],repeat:-1});
         this.anims.create({key:`${this.enemyType}_walk`,frames:this.anims.generateFrameNumbers(`${this.enemyType}_walk`),frameRate:10,repeat:-1});
 
         this.physics.world.setBounds(0,0,this.worldWidth,this.worldHeight);
-
         this.bg=this.add.tileSprite(0,0,this.worldWidth,832,'bg').setOrigin(0);
 
-        // --- GROUND ---
+        // GROUND
         this.ground=this.physics.add.staticGroup();
         const gW=this.textures.get('ground').getSourceImage().width;
         for(let i=0;i<this.worldWidth/gW;i++)
             this.ground.create(i*gW+gW/2,this.worldHeight,'ground').setOrigin(0.5,1).refreshBody();
 
-        // --- PLATFORMS ---
+        // PLATFORMS
         this.platforms=this.physics.add.staticGroup();
         this.movingPlatforms=this.physics.add.group({allowGravity:false,immovable:true});
         this.spawnPlatforms();
 
-        // --- PLAYER ---
+        // PLAYER
         this.player=new Player(this,200,620,`${this.selectedPlayer}_idle`);
         this.physics.add.collider(this.player,this.ground);
         this.physics.add.collider(this.player,this.platforms);
         this.physics.add.collider(this.player,this.movingPlatforms);
 
-        // --- CAMERA ---
+        // CAMERA
         this.cameras.main.startFollow(this.player,true,0.12,0.12);
         this.cameras.main.setBounds(0,0,this.worldWidth,this.worldHeight);
 
-        // --- UI ---
+        // UI
         document.fonts.ready.then(()=>{
             this.hpIcons=[];
             for(let i=0;i<this.maxHP;i++)
@@ -304,7 +302,7 @@ class GameScene extends Phaser.Scene {
             }).setScrollFactor(0);
         });
 
-        // --- HEARTS ---
+        // HEARTS
         this.hearts = this.physics.add.staticGroup();
         this.spawnHearts(this.totalHearts);
         this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
@@ -317,7 +315,7 @@ class GameScene extends Phaser.Scene {
             }
         });
 
-        // --- ENEMIES ---
+        // ENEMIES
         this.enemies = this.physics.add.group();
         for(let i=0;i<5;i++)
             this.enemies.add(new Enemy(this,800+i*900,620,this.enemyType));
@@ -334,7 +332,7 @@ class GameScene extends Phaser.Scene {
             }
         });
 
-        // --- MOBILE BUTTONS ---
+        // MOBILE BUTTONS
         if(this.sys.game.device.os.android || this.sys.game.device.os.iOS){
             this.createMobileButtons();
         }
@@ -343,34 +341,22 @@ class GameScene extends Phaser.Scene {
     update(){
         this.bg.tilePositionX=this.cameras.main.scrollX*0.3;
 
-        // --- Рух ворогів з платформами ---
+        // ENEMIES PATROL & JUMP
         this.enemies.getChildren().forEach(e=>{
             if(e.isDead) return;
-
             const p=this.player;
             const dist=Phaser.Math.Distance.Between(e.x,e.y,p.x,p.y);
 
             const plats=this.platforms.getChildren().concat(this.movingPlatformsList);
-            const platBelow=plats.find(pl=>{
-                return Math.abs(pl.x - e.x) < pl.displayWidth/2 + 10 &&
-                       Math.abs(pl.y - e.y) < 10;
-            });
-
-            const playerPlat=plats.find(pl=>{
-                return Math.abs(pl.x - p.x) < pl.displayWidth/2 + 10 &&
-                       Math.abs(pl.y - p.y) < 10;
-            });
+            const platBelow=plats.find(pl=>Math.abs(pl.x - e.x) < pl.displayWidth/2+10 && Math.abs(pl.y - e.y) < 10);
+            const playerPlat=plats.find(pl=>Math.abs(pl.x - p.x)<pl.displayWidth/2+10 && Math.abs(pl.y - p.y)<10);
 
             if(dist < 450){
-                const dir = p.x < e.x?-1:1;
+                const dir = p.x<e.x?-1:1;
                 e.setFlipX(dir<0);
-                if(e.body.blocked.down || platBelow){
-                    e.setVelocityX(dir*e.speed);
-                }
-                if(playerPlat && (!platBelow || playerPlat.y < platBelow.y - 10)){
-                    if(e.body.blocked.down){
-                        e.setVelocityY(-this.player.jumpVelocity*0.7);
-                    }
+                if(e.body.blocked.down || platBelow) e.setVelocityX(dir*e.speed);
+                if(playerPlat && (!platBelow || playerPlat.y < platBelow.y -10)){
+                    if(e.body.blocked.down) e.setVelocityY(-this.player.jumpVelocity*0.7);
                 }
             } else {
                 if(platBelow){
@@ -382,11 +368,9 @@ class GameScene extends Phaser.Scene {
                 }
             }
 
-            if(platBelow && platBelow.isMoving){
-                e.y += platBelow.speed * platBelow.direction * (1/60);
-            }
+            if(platBelow && platBelow.isMoving) e.y += platBelow.speed * platBelow.direction * (1/60);
 
-            if(Math.abs(e.body.velocity.x) > 5) e.anims.play(`${e.type}_walk`,true);
+            if(Math.abs(e.body.velocity.x)>5) e.anims.play(`${e.type}_walk`,true);
             else e.anims.play(`${e.type}_idle`,true);
         });
     }
@@ -402,28 +386,56 @@ class GameScene extends Phaser.Scene {
 
     spawnPlatforms(){
         let x=500;
+        let lastWasMoving=false;
         for(let i=0;i<20;i++){
             const y=Phaser.Math.Between(260,380);
-            const isMoving=i<5; // перші 5 платформ рухомі
+            let isMoving=false;
+            if(!lastWasMoving && i<20 && Phaser.Math.Between(0,4)<1){
+                isMoving=true; // приблизно 5 рухомих платформ
+                lastWasMoving=true;
+            } else lastWasMoving=false;
+
             const pf = isMoving ?
                 this.movingPlatforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`) :
                 this.platforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`);
             pf.refreshBody();
+
             if(isMoving){
                 pf.isMoving=true;
                 pf.speed=50;
                 pf.direction=1;
                 this.movingPlatformsList.push(pf);
             }
+
             x+=Phaser.Math.Between(280,340);
         }
     }
 
     spawnHearts(count){
-        const plats=this.platforms.getChildren();
+        const plats=this.platforms.getChildren().concat(this.movingPlatformsList);
         for(let i=0;i<count;i++){
-            const p=Phaser.Utils.Array.GetRandom(plats);
-            this.hearts.create(p.x,p.getBounds().top-30,'heart_collect').setScale(0.45).refreshBody();
+            let x,y,overlap;
+            do{
+                x=Phaser.Math.Between(50,this.worldWidth-50);
+                y=Phaser.Math.Between(50,this.worldHeight-200);
+                overlap = plats.some(pl=>{
+                    const bounds=pl.getBounds();
+                    return x>bounds.left-20 && x<bounds.right+20 && y>bounds.top-20 && y<bounds.bottom+20;
+                });
+                if(!overlap){
+                    overlap=this.hearts.getChildren().some(h=>Math.abs(h.x-x)<40 && Math.abs(h.y-y)<40);
+                }
+            } while(overlap);
+
+            const heart=this.hearts.create(x,y,'heart_collect').setScale(0.45).refreshBody();
+            this.tweens.add({
+                targets:heart,
+                scale:0.5,
+                duration:800,
+                yoyo:true,
+                repeat:-1,
+                ease:'Sine.easeInOut'
+            });
         }
     }
 
@@ -431,6 +443,17 @@ class GameScene extends Phaser.Scene {
         const left=this.add.dom(20,this.scale.height-80,'div','class=button','◀').setOrigin(0);
         const right=this.add.dom(100,this.scale.height-80,'div','class=button','▶').setOrigin(0);
         const jump=this.add.dom(this.scale.width-80,this.scale.height-80,'div','class=button','▲').setOrigin(0);
+
+        [left,right,jump].forEach(btn=>{
+            this.tweens.add({
+                targets:btn,
+                scale:1.1,
+                duration:600,
+                yoyo:true,
+                repeat:-1,
+                ease:'Sine.easeInOut'
+            });
+        });
 
         left.addListener('pointerdown'); left.on('pointerdown',()=>this.player.moveLeft=true);
         left.addListener('pointerup'); left.on('pointerup',()=>this.player.moveLeft=false);
