@@ -157,7 +157,7 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         else if(r) this.setFlipX(false);
 
         if(Math.abs(this.body.velocity.x)>5){
-            this.anims.play('walk',true);
+            this.anims.play(`${this.scene.selectedPlayer}_walk`,true);
             if(!this.walkSound) this.walkSound=this.scene.sound.add('walk',{loop:true,volume:0.2});
             if(!this.walkSound.isPlaying) this.walkSound.play();
         } else {
@@ -182,19 +182,23 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     die(){
         if(this.isDead) return;
-        this.isDead=true;
-        this.disableBody(true,true);
+        this.isDead = true;
+        this.disableBody(true, true);
+        console.log('Enemy died!');
 
-        const h = this.scene.physics.add.image(this.x,this.y-20,'heart_small')
-            .setScale(0.4).setBounce(0.4)
+        const h = this.scene.physics.add.image(this.x, this.y-20, 'heart_small')
+            .setScale(0.6)
+            .setBounce(0.6)
             .setVelocity(Phaser.Math.Between(-80,80),-260)
             .setCollideWorldBounds(true);
-        this.scene.physics.add.collider(h,this.scene.ground);
-        this.scene.physics.add.collider(h,this.scene.platforms);
-        this.scene.physics.add.collider(h,this.scene.movingPlatforms);
-        this.scene.physics.add.overlap(this.scene.player,h,()=>{
+
+        this.scene.physics.add.collider(h, this.scene.ground);
+        this.scene.physics.add.collider(h, this.scene.platforms);
+        this.scene.physics.add.collider(h, this.scene.movingPlatforms);
+
+        this.scene.physics.add.overlap(this.scene.player, h, ()=>{
             h.destroy();
-            this.scene.hp = Math.min(this.scene.hp+1,this.scene.maxHP);
+            this.scene.hp = Math.min(this.scene.hp+1, this.scene.maxHP);
             this.scene.hpIcons[this.scene.hp-1].setAlpha(1);
             this.scene.sound.play('collect');
         });
@@ -280,7 +284,7 @@ class GameScene extends Phaser.Scene {
         });
 
         // HEARTS
-        this.hearts = this.physics.add.staticGroup();
+        this.hearts = this.physics.add.group();
         this.spawnHearts(this.totalHearts);
         this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
             h.destroy();
@@ -292,7 +296,7 @@ class GameScene extends Phaser.Scene {
             }
         });
 
-        // ENEMIES (5)
+        // ENEMIES
         this.enemies = this.physics.add.group();
         for(let i=0;i<5;i++){
             const x=800+i*900;
@@ -302,12 +306,15 @@ class GameScene extends Phaser.Scene {
         this.physics.add.collider(this.enemies,this.ground);
         this.physics.add.collider(this.enemies,this.platforms);
 
-        this.physics.add.collider(this.player,this.enemies,(p,e)=>{
-            if(!e.isDead && p.body.velocity.y>0 && p.y<e.y){
-                e.die();
-                p.setVelocityY(-350);
-            } else if(!e.isDead){
-                this.damage();
+        // Колайдер гравець ↔ вороги
+        this.physics.add.collider(this.player, this.enemies, (p, e) => {
+            if(!e.isDead){
+                if(p.body.velocity.y > 0 && p.y + p.height/2 < e.y + e.height/2){
+                    e.die();
+                    p.setVelocityY(-350);
+                } else {
+                    this.damage();
+                }
             }
         });
 
@@ -338,8 +345,9 @@ class GameScene extends Phaser.Scene {
         });
 
         this.movingPlatformsList.forEach(pf=>{
-            pf.y += pf.speed * pf.direction * (delta/1000);
-            if(pf.y<260 || pf.y>480) pf.direction*=-1;
+            pf.body.setVelocityY(pf.speed * pf.direction);
+            if(pf.y<260) pf.direction=1;
+            if(pf.y>480) pf.direction=-1;
         });
     }
 
@@ -370,7 +378,7 @@ class GameScene extends Phaser.Scene {
             }
 
             x += Phaser.Math.Between(280,340);
-            if(isMoving) x += 100; // додатковий відступ після рухомої платформи
+            if(isMoving) x += 100;
         }
     }
 
