@@ -20,7 +20,7 @@ class MenuScene extends Phaser.Scene {
         this.load.image('bg_far','assets/backgrounds/bg_far.png');
         this.load.image('bg_mid','assets/backgrounds/bg_mid.png');
         this.load.image('bg_near','assets/backgrounds/bg_near.png');
-        this.load.font('gameFont','assets/fonts/gameFont.ttf');
+        this.load.audio('hover','assets/sounds/hover.mp3');
     }
     create(){
         const {width,height} = this.scale;
@@ -33,13 +33,17 @@ class MenuScene extends Phaser.Scene {
             const optionStyle = { fontFamily:'gameFont', fontSize:'56px', fill:'#e8d9b0' };
 
             this.add.text(width/2,height/3,'Pink Yupik Arcade', titleStyle).setOrigin(0.5);
+
             this.playBtn = this.add.text(width/2,height/2,'PLAY',optionStyle)
                 .setOrigin(0.5)
                 .setInteractive()
+                .on('pointerover',()=>this.sound.play('hover'))
                 .on('pointerdown',()=>this.scene.start('SelectScene'));
+
             this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',optionStyle)
                 .setOrigin(0.5)
                 .setInteractive()
+                .on('pointerover',()=>this.sound.play('hover'))
                 .on('pointerdown',()=>window.Telegram?.WebApp?.close());
 
             this.tweens.add({
@@ -71,6 +75,7 @@ class SelectScene extends Phaser.Scene {
         this.load.image('platform','assets/platforms/platform_1.png');
         this.load.image('player1_idle','assets/player1/idle.png');
         this.load.image('player2_idle','assets/player2/idle.png');
+        this.load.audio('hover','assets/sounds/hover.mp3');
     }
     create(){
         const {width,height} = this.scale;
@@ -88,9 +93,12 @@ class SelectScene extends Phaser.Scene {
 
             const p1=this.add.image(width/2-220,y-110,'player1_idle')
                 .setInteractive()
+                .on('pointerover',()=>this.sound.play('hover'))
                 .on('pointerdown',()=>this.scene.start('GameScene',{player:'player1'}));
+
             const p2=this.add.image(width/2+220,y-110,'player2_idle')
                 .setInteractive()
+                .on('pointerover',()=>this.sound.play('hover'))
                 .on('pointerdown',()=>this.scene.start('GameScene',{player:'player2'}));
 
             this.tweens.add({
@@ -148,8 +156,14 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         if(l) this.setFlipX(true);
         else if(r) this.setFlipX(false);
 
-        if(Math.abs(this.body.velocity.x)>5) this.anims.play('walk',true);
-        else this.anims.play('idle',true);
+        if(Math.abs(this.body.velocity.x)>5){
+            this.anims.play('walk',true);
+            if(!this.walkSound) this.walkSound=this.scene.sound.add('walk',{loop:true,volume:0.2});
+            if(!this.walkSound.isPlaying) this.walkSound.play();
+        } else {
+            this.anims.play('idle',true);
+            if(this.walkSound?.isPlaying) this.walkSound.stop();
+        }
     }
 }
 
@@ -157,13 +171,13 @@ class Player extends Phaser.Physics.Arcade.Sprite {
    ENEMY
 ========================================================= */
 class Enemy extends Phaser.Physics.Arcade.Sprite {
-    constructor(scene,x,y,type,direction){
+    constructor(scene,x,y,type){
         super(scene,x,y,`${type}_idle`);
         scene.add.existing(this);
         scene.physics.add.existing(this);
         this.type=type; this.speed=120; this.isDead=false;
         this.setCollideWorldBounds(true).setBodySize(90,120).setOffset(26,18);
-        this.direction = direction; // -1 або 1
+        this.direction=Phaser.Math.Between(0,1)?1:-1;
     }
 
     die(){
@@ -171,8 +185,10 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.isDead=true;
         this.disableBody(true,true);
 
+        // випадає маленьке серце
         const h = this.scene.physics.add.image(this.x,this.y-20,'heart_small')
-            .setScale(0.4).setBounce(0.4).setVelocity(Phaser.Math.Between(-80,80),-260)
+            .setScale(0.4).setBounce(0.4)
+            .setVelocity(Phaser.Math.Between(-80,80),-260)
             .setCollideWorldBounds(true);
         this.scene.physics.add.collider(h,this.scene.ground);
         this.scene.physics.add.collider(h,this.scene.platforms);
@@ -181,6 +197,7 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
             h.destroy();
             this.scene.hp = Math.min(this.scene.hp+1,this.scene.maxHP);
             this.scene.hpIcons[this.scene.hp-1].setAlpha(1);
+            this.scene.sound.play('collect');
         });
     }
 }
@@ -216,6 +233,7 @@ class GameScene extends Phaser.Scene {
 
         this.load.image('heart_collect','assets/items/heart_v4.png');
         this.load.image('heart_small','assets/items/heart_small.png');
+
         this.load.audio('jump','assets/sounds/jump.mp3');
         this.load.audio('collect','assets/sounds/collect.mp3');
         this.load.audio('walk','assets/sounds/walk.mp3');
@@ -224,16 +242,12 @@ class GameScene extends Phaser.Scene {
 
     create(){
         const {width,height} = this.scale;
-
-        // ANIMATIONS
         this.anims.create({key:'idle',frames:[{key:`${this.selectedPlayer}_idle`}],repeat:-1});
         this.anims.create({key:'walk',frames:this.anims.generateFrameNumbers(`${this.selectedPlayer}_walk`),frameRate:10,repeat:-1});
         this.anims.create({key:`${this.enemyType}_idle`,frames:[{key:`${this.enemyType}_idle`}],repeat:-1});
         this.anims.create({key:`${this.enemyType}_walk`,frames:this.anims.generateFrameNumbers(`${this.enemyType}_walk`),frameRate:10,repeat:-1});
 
         this.physics.world.setBounds(0,0,this.worldWidth,this.worldHeight);
-
-        // BACKGROUND
         this.bg=this.add.tileSprite(0,0,this.worldWidth,832,'bg').setOrigin(0);
 
         // GROUND
@@ -279,14 +293,16 @@ class GameScene extends Phaser.Scene {
             }
         });
 
-        // ENEMIES
+        // ENEMIES (5)
         this.enemies = this.physics.add.group();
         for(let i=0;i<5;i++){
-            let dir = Phaser.Math.Between(0,1)===0?-1:1;
-            this.enemies.add(new Enemy(this,800+i*900,620,this.enemyType,dir));
+            const x=800+i*900;
+            const y=620;
+            this.enemies.add(new Enemy(this,x,y,this.enemyType));
         }
         this.physics.add.collider(this.enemies,this.ground);
         this.physics.add.collider(this.enemies,this.platforms);
+
         this.physics.add.collider(this.player,this.enemies,(p,e)=>{
             if(!e.isDead && p.body.velocity.y>0 && p.y<e.y){
                 e.die();
@@ -295,41 +311,36 @@ class GameScene extends Phaser.Scene {
                 this.damage();
             }
         });
+
+        if(this.sys.game.device.os.android || this.sys.game.device.os.iOS){
+            this.createMobileButtons();
+        }
     }
 
-    update(time,delta){
+    update(){
         this.bg.tilePositionX=this.cameras.main.scrollX*0.3;
 
-        // Moving platforms
-        this.movingPlatformsList.forEach(pf=>{
-            pf.y += pf.speed * pf.direction * delta/1000;
-            if(pf.y < 200) pf.direction = 1;
-            if(pf.y > 500) pf.direction = -1;
-        });
-
-        // Enemy AI
         this.enemies.getChildren().forEach(e=>{
             if(e.isDead) return;
             const p=this.player;
             const dist=Phaser.Math.Distance.Between(e.x,e.y,p.x,p.y);
-            const speed = e.speed;
 
-            if(dist<400){
-                // Follow player
+            if(dist < 450){
                 const dir = p.x<e.x?-1:1;
                 e.setFlipX(dir<0);
-                e.setVelocityX(dir*speed);
-                if(p.y+50 < e.y && e.body.blocked.down) e.setVelocityY(-this.player.jumpVelocity*0.7);
+                e.setVelocityX(dir*e.speed);
             } else {
-                // Patrol level
-                if(e.x <= 50) e.direction = 1;
-                if(e.x >= this.worldWidth-50) e.direction = -1;
-                e.setFlipX(e.direction<0);
-                e.setVelocityX(e.direction*speed);
+                e.setVelocityX(e.direction*e.speed);
+                if(e.x<0 || e.x>this.worldWidth) e.direction*=-1;
             }
 
             if(Math.abs(e.body.velocity.x)>5) e.anims.play(`${e.type}_walk`,true);
             else e.anims.play(`${e.type}_idle`,true);
+        });
+
+        this.movingPlatformsList.forEach(pf=>{
+            pf.y += pf.speed * pf.direction * (1/60);
+            if(pf.y<260 || pf.y>480) pf.direction*=-1;
         });
     }
 
@@ -341,17 +352,18 @@ class GameScene extends Phaser.Scene {
     }
 
     spawnPlatforms(){
-        let x=500;
+        let x=500,lastWasMoving=false;
         for(let i=0;i<20;i++){
             const y=Phaser.Math.Between(260,380);
-            const isMoving = i<5; // перші 5 платформ рухомі
-            const pf = isMoving ? this.movingPlatforms.create(x,Phaser.Math.Between(200,500),`pf${Phaser.Math.Between(1,4)}`) :
+            let isMoving=!lastWasMoving && Phaser.Math.Between(0,3)<1;
+            lastWasMoving=isMoving;
+
+            const pf = isMoving ? this.movingPlatforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`) :
                                   this.platforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`);
             pf.refreshBody();
+
             if(isMoving){
-                pf.isMoving=true;
-                pf.speed = Phaser.Math.Between(50,120);
-                pf.direction = Phaser.Math.Between(0,1)===0?-1:1;
+                pf.isMoving=true; pf.speed=Phaser.Math.Between(30,70); pf.direction=1;
                 this.movingPlatformsList.push(pf);
             }
             x+=Phaser.Math.Between(280,340);
@@ -368,8 +380,9 @@ class GameScene extends Phaser.Scene {
                 overlap = plats.some(pl=>{
                     const b=pl.getBounds();
                     return x>b.left-20 && x<b.right+20 && y>b.top-20 && y<b.bottom+20;
-                }) || this.hearts?.getChildren().some(h=>Math.abs(h.x-x)<40 && Math.abs(h.y-y)<40);
+                }) || this.hearts.getChildren().some(h=>Math.abs(h.x-x)<40 && Math.abs(h.y-y)<40);
             } while(overlap);
+
             const heart=this.hearts.create(x,y,'heart_collect').setScale(0.45).refreshBody();
             this.tweens.add({targets:heart,scale:0.5,duration:800,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
         }
@@ -377,6 +390,21 @@ class GameScene extends Phaser.Scene {
 
     showWinText(){
         this.scene.start('WinScene',{player:this.selectedPlayer});
+    }
+
+    createMobileButtons(){
+        const left=this.add.dom(20,this.scale.height-80,'div','class=button','◀').setOrigin(0);
+        const right=this.add.dom(100,this.scale.height-80,'div','class=button','▶').setOrigin(0);
+        const jump=this.add.dom(this.scale.width-80,this.scale.height-80,'div','class=button','▲').setOrigin(0);
+
+        [left,right,jump].forEach(btn=>this.tweens.add({targets:btn,scale:1.1,duration:600,yoyo:true,repeat:-1,ease:'Sine.easeInOut'}));
+
+        left.addListener('pointerdown'); left.on('pointerdown',()=>this.player.moveLeft=true);
+        left.addListener('pointerup'); left.on('pointerup',()=>this.player.moveLeft=false);
+        right.addListener('pointerdown'); right.on('pointerdown',()=>this.player.moveRight=true);
+        right.addListener('pointerup'); right.on('pointerup',()=>this.player.moveRight=false);
+        jump.addListener('pointerdown'); jump.on('pointerdown',()=>this.player.jump=true);
+        jump.addListener('pointerup'); jump.on('pointerup',()=>this.player.jump=false);
     }
 }
 
