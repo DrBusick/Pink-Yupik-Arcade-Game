@@ -19,7 +19,7 @@ class MenuScene extends Phaser.Scene {
     }
 
     create() {
-        const { width, height } = this.sys.game.config;
+        const { width, height } = this.scale;
 
         this.bgFar  = this.add.tileSprite(0, 0, width, height, 'bg_far').setOrigin(0);
         this.bgMid  = this.add.tileSprite(0, 0, width, height, 'bg_mid').setOrigin(0);
@@ -57,11 +57,18 @@ class MenuScene extends Phaser.Scene {
             exit.setScale(1.15);
             exit.setTint(0xff6b6b);
         });
-        exit.on('pointerout', () => {
-            exit.setScale(1);
-            exit.clearTint();
-        });
+        exit.on('pointerout', () => { exit.setScale(1); exit.clearTint(); });
         exit.on('pointerdown', () => window.close());
+
+        this.scale.on('resize', this.resize, this);
+    }
+
+    resize(gameSize){
+        const width = gameSize.width;
+        const height = gameSize.height;
+        if(this.bgFar) this.bgFar.setSize(width,height);
+        if(this.bgMid) this.bgMid.setSize(width,height);
+        if(this.bgNear) this.bgNear.setSize(width,height);
     }
 
     update() {
@@ -87,9 +94,9 @@ class SelectScene extends Phaser.Scene {
     create(){
         const {width,height}=this.scale;
 
-        this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
-        this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
-        this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
+        this.bgFar  = this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
+        this.bgMid  = this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
+        this.bgNear = this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
         this.add.text(width/2, height*0.15,'Select Character',{
             fontFamily:'UnifrakturCook',
@@ -110,6 +117,16 @@ class SelectScene extends Phaser.Scene {
             .setScale(1.2)
             .setInteractive()
             .on('pointerdown',()=>this.scene.start('GameScene',{player:'player2'}));
+
+        this.scale.on('resize', this.resize, this);
+    }
+
+    resize(gameSize){
+        const width = gameSize.width;
+        const height = gameSize.height;
+        if(this.bgFar) this.bgFar.setSize(width,height);
+        if(this.bgMid) this.bgMid.setSize(width,height);
+        if(this.bgNear) this.bgNear.setSize(width,height);
     }
 }
 
@@ -161,7 +178,7 @@ class Player extends Phaser.Physics.Arcade.Sprite {
             this.jumpCount < this.maxJumps){
             this.setVelocityY(-this.jumpVelocity);
             this.jumpCount++;
-            this.scene.jumpSound.play();
+            if(this.scene.jumpSound) this.scene.jumpSound.play();
             this.touchJump=false;
         }
 
@@ -189,7 +206,6 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.speed=90;
         this.chaseRange=420;
         this.stopRange=60;
-
         this.isDead = false;
 
         this.play('enemy_idle');
@@ -198,12 +214,10 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
     preUpdate(time,delta){
         super.preUpdate(time,delta);
         if(this.isDead) return;
-
         const p=this.scene.player;
         if(!p) return;
 
         const d=Phaser.Math.Distance.Between(this.x,this.y,p.x,p.y);
-
         if(d<this.chaseRange && d>this.stopRange){
             const dir=p.x<this.x?-1:1;
             this.setVelocityX(this.speed*dir);
@@ -215,6 +229,7 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
         }
     }
 }
+
 
 // ======================= GAME SCENE ========================
 class GameScene extends Phaser.Scene {
