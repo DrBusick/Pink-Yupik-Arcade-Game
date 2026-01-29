@@ -281,8 +281,7 @@ class GameScene extends Phaser.Scene {
         this.ground = this.physics.add.staticGroup();
         const gW = this.textures.get('ground').getSourceImage().width;
         for(let i=0;i<this.worldWidth/gW;i++)
-            this.ground.create(i*gW+gW/2,this.worldHeight,'ground')
-                .setOrigin(0.5,1).refreshBody();
+            this.ground.create(i*gW+gW/2,this.worldHeight,'ground').setOrigin(0.5,1).refreshBody();
 
         // Платформи
         this.staticPlatforms = this.physics.add.staticGroup();
@@ -309,7 +308,7 @@ class GameScene extends Phaser.Scene {
         this.physics.add.collider(this.enemies,this.staticPlatforms);
         this.physics.add.collider(this.player,this.enemies,this.handleEnemyCollision,null,this);
 
-        // Серця
+        // Серця на рівні
         this.hearts = this.physics.add.staticGroup();
         this.spawnHeartsSafe(25);
 
@@ -348,22 +347,28 @@ class GameScene extends Phaser.Scene {
         this.createTouchControls();
     }
 
-    handleEnemyCollision(player,enemy){
-        if(player.body.velocity.y>0 && player.y < enemy.y - 20){
-            enemy.destroy();
+    // ================= ENEMY HIT LOGIC =================
+    handleEnemyCollision(player, enemy) {
+        if (player.body.velocity.y > 0 && player.y < enemy.y - 20) {
+            enemy.destroy(); // ворог зникає
             player.setVelocityY(-350);
 
-            if(Math.random()<0.5){
-                const h = this.hearts.create(enemy.x, enemy.y-50, 'heart').setDisplaySize(50,50);
-                this.physics.add.overlap(this.player,h,(p,h)=>{
-                    h.destroy();
-                    this.collectSound.play();
-                    this.heartsCollected++;
-                    this.heartText.setText(`❤️ ${this.heartsCollected} / 25`);
-                    if(this.heartsCollected===25) this.winText.setAlpha(1);
-                });
-            }
-        } else this.onPlayerHit(player,enemy);
+            // маленьке серце для відновлення життя
+            const h = this.hearts.create(enemy.x, enemy.y - 50, 'heart').setDisplaySize(40, 40);
+            this.physics.add.overlap(this.player, h, (p, heart) => {
+                heart.destroy();
+                this.collectSound.play();
+                this.hp = Math.min(this.hp + 1, this.maxHP);
+                this.updateHPUI();
+            });
+        } else this.onPlayerHit(player, enemy);
+    }
+
+    updateHPUI() {
+        for (let i = 0; i < this.maxHP; i++) {
+            if (i < this.hp) this.hpIcons[i].setAlpha(1);
+            else this.hpIcons[i].setAlpha(0.3);
+        }
     }
 
     onPlayerHit(player){
@@ -371,7 +376,7 @@ class GameScene extends Phaser.Scene {
         this.isInvulnerable=true;
 
         this.hp--;
-        if(this.hpIcons[this.hp]) this.hpIcons[this.hp].setAlpha(0.3);
+        this.updateHPUI();
 
         this.tweens.add({targets:player,alpha:0,duration:80,yoyo:true,repeat:8});
 
@@ -438,5 +443,43 @@ class GameScene extends Phaser.Scene {
         const makeBtn=(x,y,key)=>{
             const b=this.add.image(x,y,key).setScrollFactor(0)
                 .setAlpha(0.55).setInteractive();
-            b.on('pointerdown',()=>b.set
-::contentReference[oaicite:0]{index=0}
+            b.on('pointerdown',()=>b.setAlpha(0.85));
+            b.on('pointerup',()=>b.setAlpha(0.55));
+            b.on('pointerout',()=>b.setAlpha(0.55));
+            return b;
+        };
+
+        const l=makeBtn(130,height-120,'btn_left');
+        l.on('pointerdown',()=>this.player.touchLeft=true);
+        l.on('pointerup',()=>this.player.touchLeft=false);
+        l.on('pointerout',()=>this.player.touchLeft=false);
+
+        const r=makeBtn(260,height-120,'btn_right');
+        r.on('pointerdown',()=>this.player.touchRight=true);
+        r.on('pointerup',()=>this.player.touchRight=false);
+        r.on('pointerout',()=>this.player.touchRight=false);
+
+        const j=makeBtn(width-140,height-120,'btn_jump');
+        j.on('pointerdown',()=>this.player.touchJump=true);
+        j.on('pointerup',()=>this.player.touchJump=false);
+        j.on('pointerout',()=>this.player.touchJump=false);
+    }
+
+    update(){
+        this.bg.tilePositionX=this.cameras.main.scrollX;
+        this.movingPlatforms.getChildren().forEach(p=>{
+            if(p.y>p.startY+p.range) p.body.setVelocityY(-p.speed);
+            if(p.y<p.startY-p.range) p.body.setVelocityY(p.speed);
+        });
+    }
+}
+
+// ======================= CONFIG =======================
+new Phaser.Game({
+    type:Phaser.AUTO,
+    width:1248,
+    height:832,
+    scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
+    physics:{default:'arcade',arcade:{gravity:{y:900},debug:false}},
+    scene:[MenuScene,SelectScene,GameScene]
+});
