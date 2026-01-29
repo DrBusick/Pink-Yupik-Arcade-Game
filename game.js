@@ -1,493 +1,298 @@
-let selectedPlayer = 'player';
+/* ===================== GLOBAL ===================== */
+let selectedPlayer = 'player1';
 
-// ======================= MENU SCENE ========================
+/* ===================== TELEGRAM ===================== */
 let tg = null;
-if (window.Telegram && window.Telegram.WebApp) {
+if (window.Telegram?.WebApp) {
     tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
 }
 
+/* ===================== MENU SCENE ===================== */
 class MenuScene extends Phaser.Scene {
     constructor() { super('MenuScene'); }
 
     preload() {
-        this.load.image('bg_far', 'assets/backgrounds/bg_far.png');
-        this.load.image('bg_mid', 'assets/backgrounds/bg_mid.png');
-        this.load.image('bg_near', 'assets/backgrounds/bg_near.png');
-        this.load.audio('hover', 'assets/sounds/hover.mp3');
+        this.load.image('bg_far','assets/backgrounds/bg_far.png');
+        this.load.image('bg_mid','assets/backgrounds/bg_mid.png');
+        this.load.image('bg_near','assets/backgrounds/bg_near.png');
     }
 
     create() {
         const { width, height } = this.scale;
 
-        this.bgFar  = this.add.tileSprite(0, 0, width, height, 'bg_far').setOrigin(0);
-        this.bgMid  = this.add.tileSprite(0, 0, width, height, 'bg_mid').setOrigin(0);
-        this.bgNear = this.add.tileSprite(0, 0, width, height, 'bg_near').setOrigin(0);
+        this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
+        this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
+        this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
-        this.hoverSound = this.sound.add('hover', { volume: 0.6 });
+        const style = { fontFamily:'UnifrakturCook', fontSize:'64px', fill:'#e8d9b0' };
 
-        const title = this.add.text(width / 2, height / 4, 'Pink Yupik Arcade', {
-            fontFamily: 'UnifrakturCook',
-            fontSize: '144px',
-            fill: '#e8d9b0'
-        }).setOrigin(0.5);
+        this.add.text(width/2, height/3, 'Pink Yupik', style).setOrigin(0.5);
 
-        title.setShadow(0, 0, '#fff2c1', 20, true, true);
-
-        this.tweens.add({
-            targets: title,
-            duration: 2000,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut'
-        });
-
-        const btnStyle = { fontFamily: 'UnifrakturCook', fontSize: '56px', fill: '#e8d9b0' };
-
-        const play = this.add.text(width/2, height/2 - 60, 'PLAY', btnStyle)
-            .setOrigin(0.5).setInteractive({ useHandCursor:true });
-
-        play.on('pointerover', () => this.hoverSound.play());
-        play.on('pointerdown', () => this.scene.start('SelectScene'));
-
-        const exit = this.add.text(width/2, height/2 + 100, 'EXIT', btnStyle)
-            .setOrigin(0.5)
-            .setInteractive({ useHandCursor:true });
-
-        exit.on('pointerover', () => {
-            this.hoverSound.play();
-            exit.setScale(1.15);
-            exit.setTint(0xff6b6b);
-        });
-        exit.on('pointerout', () => {
-            exit.setScale(1);
-            exit.clearTint();
-        });
-        exit.on('pointerdown', () => {
-            this.hoverSound.play();
-            window.close();
-        });
-    }
-
-    update() {
-        this.bgFar.tilePositionX += 0.2;
-        this.bgMid.tilePositionX += 0.5;
-        this.bgNear.tilePositionX += 1;
+        const play = this.add.text(width/2, height/2, 'PLAY', style)
+            .setOrigin(0.5).setInteractive();
+        play.on('pointerdown', ()=>this.scene.start('SelectScene'));
     }
 }
 
-// ======================= SELECT SCENE =======================
+/* ===================== SELECT SCENE ===================== */
 class SelectScene extends Phaser.Scene {
     constructor(){ super('SelectScene'); }
 
     preload() {
-        this.load.image('bg_far', 'assets/backgrounds/bg_far.png');
-        this.load.image('bg_mid', 'assets/backgrounds/bg_mid.png');
-        this.load.image('bg_near', 'assets/backgrounds/bg_near.png');
-        this.load.image('p1_idle','assets/player1/idle.png');
-        this.load.image('p2_idle','assets/player2/idle.png');
-        this.load.image('select_platform','assets/platforms/platform_1.png');
+        this.load.image('bg_far','assets/backgrounds/bg_far.png');
+        this.load.image('bg_mid','assets/backgrounds/bg_mid.png');
+        this.load.image('bg_near','assets/backgrounds/bg_near.png');
+        this.load.image('p1','assets/player1/idle.png');
+        this.load.image('p2','assets/player2/idle.png');
     }
 
-    create(){
-        const {width,height}=this.scale;
+    create() {
+        const { width, height } = this.scale;
 
         this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
         this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
         this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
-        this.add.text(width/2,120,'Select Character',{
-            fontFamily:'UnifrakturCook',fontSize:'64px',fill:'#e8d9b0'
-        }).setOrigin(0.5);
+        const style = { fontFamily:'UnifrakturCook', fontSize:'48px', fill:'#e8d9b0' };
 
-        const baseY = height / 2 + 90;
+        this.add.text(width/2,100,'Select Hero',style).setOrigin(0.5);
 
-        this.add.image(width/2 - 220, baseY, 'select_platform').setScale(1.1);
-        this.add.image(width/2 + 220, baseY, 'select_platform').setScale(1.1);
-
-        this.add.image(width/2 - 220, baseY - 110, 'p1_idle')
-            .setScale(1.2)
+        this.add.image(width/2-150,height/2,'p1')
             .setInteractive()
-            .on('pointerdown',()=>this.scene.start('GameScene',{player:'player1'}));
+            .on('pointerdown',()=>{
+                selectedPlayer='player1';
+                this.scene.start('GameScene');
+            });
 
-        this.add.image(width/2 + 220, baseY - 110, 'p2_idle')
-            .setScale(1.2)
+        this.add.image(width/2+150,height/2,'p2')
             .setInteractive()
-            .on('pointerdown',()=>this.scene.start('GameScene',{player:'player2'}));
+            .on('pointerdown',()=>{
+                selectedPlayer='player2';
+                this.scene.start('GameScene');
+            });
     }
 }
 
-// ======================= PLAYER ========================
-class Player extends Phaser.Physics.Arcade.Sprite {
-    constructor(scene, x, y) {
-        super(scene, x, y, 'idle');
-        scene.add.existing(this);
-        scene.physics.add.existing(this);
-
-        this.setCollideWorldBounds(true);
-        this.setBodySize(90,120).setOffset(26,18);
-
-        this.speed = 180;
-        this.accel = 900;
-        this.body.setMaxVelocity(this.speed, 1000);
-        this.body.setDragX(1200);
-
-        this.jumpVelocity = 520;
-        this.jumpCount = 0;
-        this.maxJumps = 3;
-        this.facing = 'right';
-
-        this.keys = scene.input.keyboard.addKeys({
-            left:'A', right:'D', up:'W',
-            left2:'LEFT', right2:'RIGHT', up2:'UP'
-        });
-
-        this.touchLeft=false;
-        this.touchRight=false;
-        this.touchJump=false;
-
-        this.walkSound = scene.sound.add('walk',{loop:true,volume:0.5});
-    }
-
-    preUpdate(t,d){
-        super.preUpdate(t,d);
-
-        const l=this.keys.left.isDown||this.keys.left2.isDown||this.touchLeft;
-        const r=this.keys.right.isDown||this.keys.right2.isDown||this.touchRight;
-
-        if(l){ this.setAccelerationX(-this.accel); this.facing='left'; }
-        else if(r){ this.setAccelerationX(this.accel); this.facing='right'; }
-        else this.setAccelerationX(0);
-
-        if(
-            (Phaser.Input.Keyboard.JustDown(this.keys.up) ||
-             Phaser.Input.Keyboard.JustDown(this.keys.up2) ||
-             this.touchJump) &&
-            this.jumpCount < this.maxJumps
-        ){
-            this.setVelocityY(-this.jumpVelocity);
-            this.jumpCount++;
-            this.scene.jumpSound.play();
-            this.touchJump=false;
-        }
-
-        if(this.body.blocked.down){
-            this.jumpCount=0;
-            if((l||r)&&!this.walkSound.isPlaying) this.walkSound.play();
-        } else if(this.walkSound.isPlaying) this.walkSound.stop();
-
-        this.setFlipX(this.facing==='left');
-        this.anims.play(l||r?'walk':'idle',true);
-    }
-}
-
-// ======================= ENEMY ========================
-class Enemy extends Phaser.Physics.Arcade.Sprite {
-    constructor(scene,x,y,type){
-        super(scene,x,y,`${type}_idle`);
-        scene.add.existing(this);
-        scene.physics.add.existing(this);
-
-        this.scene = scene;
-        this.type = type;
-        this.setCollideWorldBounds(true);
-        this.setBodySize(90,120).setOffset(26,18);
-
-        this.speed = 100;
-        this.chaseRange = 400;
-        this.stopRange = 60;
-        this.isDead = false;
-        this.direction = 1;
-        this.moveRange = 300;
-        this.startX = x;
-
-        this.play('enemy_idle');
-    }
-
-    preUpdate(time, delta){
-        super.preUpdate(time, delta);
-        if(this.isDead) return;
-
-        const player = this.scene.player;
-        if(!player) return;
-
-        const distance = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
-
-        // Стояти, якщо гравець на платформі під ворогом
-        if(player.y > this.y && Math.abs(player.x - this.x) < 100){
-            this.setVelocityX(0);
-            this.anims.play('enemy_idle', true);
-            return;
-        }
-
-        // Переслідувати гравця
-        if(distance < this.chaseRange && distance > this.stopRange){
-            const dir = player.x < this.x ? -1 : 1;
-            this.setVelocityX(this.speed * dir);
-            this.setFlipX(dir < 0);
-            this.anims.play('enemy_walk', true);
-        }
-        // Патрулювання
-        else {
-            this.setVelocityX(this.speed * this.direction);
-            this.setFlipX(this.direction < 0);
-            this.anims.play('enemy_walk', true);
-            if(this.x > this.startX + this.moveRange) this.direction = -1;
-            if(this.x < this.startX - this.moveRange) this.direction = 1;
-        }
-    }
-
-    die(){
-        if(this.isDead) return;
-        this.isDead = true;
-        this.disableBody(true,true);
-
-        // Маленьке серце для лікування
-        const heart = this.scene.physics.add.image(this.x, this.y - 20, 'heart_small').setScale(0.4);
-        heart.setCollideWorldBounds(true);
-        heart.setBounce(0.5);
-
-        this.scene.physics.add.collider(heart, this.scene.staticPlatforms);
-        this.scene.physics.add.collider(heart, this.scene.movingPlatforms);
-        this.scene.physics.add.collider(heart, this.scene.ground);
-
-        this.scene.physics.add.overlap(this.scene.player, heart, (player, h) => {
-            h.destroy();
-            this.scene.hp = Math.min(this.scene.hp + 1, this.scene.maxHP);
-            if(this.scene.hpIcons[this.scene.hp - 1]) this.scene.hpIcons[this.scene.hp - 1].setAlpha(1);
-        });
-    }
-}
-
-// ======================= GAME SCENE ========================
+/* ===================== GAME SCENE ===================== */
 class GameScene extends Phaser.Scene {
-    constructor(){
+    constructor() {
         super('GameScene');
-        this.worldWidth = 6000;
-        this.worldHeight = 832;
-        this.maxHP = 3;
+        this.worldWidth = 5000;
+        this.maxEnemies = 5;
+        this.totalBigHearts = 25;
         this.hp = 3;
-        this.isInvulnerable = false;
-        this.heartsCollected = 0;
-        this.selectedPlayer = 'player1';
     }
 
-    init(data){
-        if(data?.player) this.selectedPlayer=data.player;
-        this.enemyType=this.selectedPlayer==='player1'?'player2':'player1';
-    }
+    preload() {
+        const p = selectedPlayer;
+        const e = p === 'player1' ? 'player2' : 'player1';
 
-    preload(){
-        const p=this.selectedPlayer;
-        const e=this.enemyType;
+        this.load.image('bg_far','assets/backgrounds/bg_far.png');
+        this.load.image('bg_mid','assets/backgrounds/bg_mid.png');
+        this.load.image('bg_near','assets/backgrounds/bg_near.png');
 
-        this.load.image(`${p}_idle`,`assets/${p}/idle.png`);
-        this.load.spritesheet(`${p}_walk`,`assets/${p}/walk.png`, {frameWidth:142,frameHeight:142});
-        this.load.image(`${e}_idle`,`assets/${e}/idle.png`);
-        this.load.spritesheet(`${e}_walk`,`assets/${e}/walk.png`, {frameWidth:142,frameHeight:142});
-
-        this.load.image('bg','assets/backgrounds/bg.png');
         this.load.image('ground','assets/platforms/ground.png');
-        for(let i=1;i<=4;i++) this.load.image(`pf${i}`,`assets/platforms/platform_${i}.png`);
+        this.load.image('platform','assets/platforms/platform_1.png');
 
-        this.load.image('heart','assets/items/heart_v4.png');
-        this.load.image('heart_small','assets/items/heart_small.png');
+        this.load.image('bigHeart','assets/items/heart_v4.png');
+        this.load.image('smallHeart','assets/items/heart_small.png');
 
-        this.load.audio('jump','assets/sounds/jump.mp3');
-        this.load.audio('walk','assets/sounds/walk.mp3');
-        this.load.audio('collect','assets/sounds/collect.mp3');
+        this.load.spritesheet('playerWalk',`assets/${p}/walk.png`,{frameWidth:142,frameHeight:142});
+        this.load.image('playerIdle',`assets/${p}/idle.png`);
 
-        this.load.image('btn_left','assets/ui/btn_left.png');
-        this.load.image('btn_right','assets/ui/btn_right.png');
-        this.load.image('btn_jump','assets/ui/btn_jump.png');
+        this.load.spritesheet('enemyWalk',`assets/${e}/walk.png`,{frameWidth:142,frameHeight:142});
+        this.load.image('enemyIdle',`assets/${e}/idle.png`);
     }
 
-    create(){
-        const p=this.selectedPlayer;
-        const e=this.enemyType;
+    create() {
+        const { width, height } = this.scale;
 
-        this.anims.create({key:'idle',frames:[{key:`${p}_idle`}],repeat:-1});
-        this.anims.create({key:'walk',frames:this.anims.generateFrameNumbers(`${p}_walk`),frameRate:10,repeat:-1});
-        this.anims.create({key:'enemy_walk',frames:this.anims.generateFrameNumbers(`${e}_walk`),frameRate:8,repeat:-1});
-        this.anims.create({key:'enemy_idle',frames:[{key:`${e}_idle`}],repeat:-1});
+        /* --- BG --- */
+        this.bgFar = this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0).setScrollFactor(0);
+        this.bgMid = this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0).setScrollFactor(0);
+        this.bgNear= this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0).setScrollFactor(0);
 
-        this.jumpSound=this.sound.add('jump');
-        this.collectSound=this.sound.add('collect');
+        /* --- WORLD --- */
+        this.physics.world.setBounds(0,0,this.worldWidth,height);
 
-        this.physics.world.setBounds(0,0,this.worldWidth,this.worldHeight);
-        this.bg=this.add.tileSprite(0,0,1248,832,'bg').setOrigin(0).setScrollFactor(0);
+        /* --- GROUND --- */
+        this.ground = this.physics.add.staticGroup();
+        for(let x=0;x<this.worldWidth;x+=256){
+            this.ground.create(x, height-32,'ground').setOrigin(0,1);
+        }
 
-        // Підлога
-        this.ground=this.physics.add.staticGroup();
-        const gW=this.textures.get('ground').getSourceImage().width;
-        for(let i=0;i<this.worldWidth/gW;i++)
-            this.ground.create(i*gW+gW/2,this.worldHeight,'ground').setOrigin(0.5,1).refreshBody();
+        /* --- PLATFORMS --- */
+        this.platforms = this.physics.add.staticGroup();
+        for(let i=0;i<20;i++){
+            this.platforms.create(
+                300+i*200,
+                Phaser.Math.Between(300,550),
+                'platform'
+            );
+        }
 
-        // Платформи
-        this.staticPlatforms=this.physics.add.staticGroup();
-        this.movingPlatforms=this.physics.add.group({allowGravity:false,immovable:true});
-        this.spawnPlatforms();
+        /* --- PLAYER --- */
+        this.player = this.physics.add.sprite(100,400,'playerIdle');
+        this.player.setCollideWorldBounds(true);
+        this.player.setBounce(0);
 
-        // Гравець
-        this.player=new Player(this,200,300);
-        this.physics.add.collider(this.player,this.ground);
-        this.physics.add.collider(this.player,this.staticPlatforms);
-        this.physics.add.collider(this.player,this.movingPlatforms);
-
-        // HP UI
-        this.hpIcons=[];
-        for(let i=0;i<this.maxHP;i++)
-            this.hpIcons.push(this.add.image(20+i*40,100,'heart').setScrollFactor(0).setScale(0.45));
-
-        // Вороги
-        this.enemies=this.physics.add.group();
-        for(let i=0;i<5;i++)
-            this.enemies.add(new Enemy(this,700+i*600,300,e));
-        this.physics.add.collider(this.enemies,this.ground);
-        this.physics.add.collider(this.enemies,this.staticPlatforms);
-        this.physics.add.collider(this.player,this.enemies,(p,enemy)=>this.handleEnemyCollision(p,enemy));
-
-        // Великі серця
-        this.hearts=this.physics.add.staticGroup();
-        this.spawnHeartsSafe(25);
-        this.heartText=this.add.text(20,60,'❤️ 0 / 25',{fontSize:'32px',fill:'#e8d9b0'}).setScrollFactor(0);
-        this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
-            h.destroy();
-            this.collectSound.play();
-            this.heartsCollected++;
-            this.heartText.setText(`❤️ ${this.heartsCollected} / 25`);
-            if(this.heartsCollected===25) this.showEndScreen(true);
+        this.anims.create({
+            key:'walk',
+            frames:this.anims.generateFrameNumbers('playerWalk',{start:0,end:7}),
+            frameRate:10,
+            repeat:-1
         });
 
-        this.createTouchControls();
+        this.physics.add.collider(this.player,this.ground);
+        this.physics.add.collider(this.player,this.platforms);
 
-        // Кнопки і текст при смерті
-        this.endGroup=this.add.container(0,0).setScrollFactor(0).setAlpha(0);
-        this.endBgFar=this.add.tileSprite(0,0,this.scale.width,this.scale.height,'bg_far').setOrigin(0);
-        this.endBgMid=this.add.tileSprite(0,0,this.scale.width,this.scale.height,'bg_mid').setOrigin(0);
-        this.endBgNear=this.add.tileSprite(0,0,this.scale.width,this.scale.height,'bg_near').setOrigin(0);
+        /* --- CAMERA --- */
+        this.cameras.main.startFollow(this.player);
+        this.cameras.main.setBounds(0,0,this.worldWidth,height);
 
-        const centerX=this.scale.width/2;
-        const centerY=this.scale.height/2;
+        /* --- INPUT --- */
+        this.cursors = this.input.keyboard.createCursorKeys();
 
-        this.endText=this.add.text(centerX,centerY-80,'', {fontFamily:'UnifrakturCook',fontSize:'96px',fill:'#ff6b6b',align:'center'}).setOrigin(0.5);
-        this.endPlay=this.add.text(centerX,centerY+20,'PLAY',{fontFamily:'UnifrakturCook',fontSize:'48px',fill:'#e8d9b0'}).setOrigin(0.5).setInteractive();
-        this.endExit=this.add.text(centerX,centerY+90,'EXIT',{fontFamily:'UnifrakturCook',fontSize:'48px',fill:'#e8d9b0'}).setOrigin(0.5).setInteractive();
+        /* --- BIG HEARTS --- */
+        this.bigHearts = this.physics.add.staticGroup();
+        for(let i=0;i<this.totalBigHearts;i++){
+            this.bigHearts.create(
+                400 + i*180,
+                Phaser.Math.Between(200,500),
+                'bigHeart'
+            );
+        }
 
-        this.endPlay.on('pointerdown',()=>this.scene.restart({player:this.selectedPlayer}));
-        this.endExit.on('pointerdown',()=>this.scene.start('MenuScene'));
+        this.collectedBigHearts = 0;
 
-        this.endGroup.add([this.endBgFar,this.endBgMid,this.endBgNear,this.endText,this.endPlay,this.endExit]);
-    }
+        this.physics.add.overlap(this.player,this.bigHearts,(p,h)=>{
+            h.destroy();
+            this.collectedBigHearts++;
+            if(this.collectedBigHearts >= this.totalBigHearts){
+                this.endScreen(true);
+            }
+        });
 
-    handleEnemyCollision(player,enemy){
-        if(enemy.isDead) return;
+        /* --- ENEMIES --- */
+        this.enemies = this.physics.add.group();
+        for(let i=0;i<this.maxEnemies;i++){
+            const enemy = this.enemies.create(
+                800 + i*600,
+                400,
+                'enemyIdle'
+            );
+            enemy.startX = enemy.x;
+            enemy.setCollideWorldBounds(true);
+            enemy.direction = 1;
+        }
 
-        if(player.body.velocity.y>0 && player.y + player.height/2 < enemy.y + enemy.height/2){
-            enemy.die();
-            player.setVelocityY(-350);
-        } else this.onPlayerHit(player);
-    }
+        this.physics.add.collider(this.enemies,this.ground);
+        this.physics.add.collider(this.enemies,this.platforms);
 
-    onPlayerHit(player){
-        if(this.isInvulnerable) return;
-        this.isInvulnerable=true;
-
-        this.hp--;
-        if(this.hpIcons[this.hp]) this.hpIcons[this.hp].setAlpha(0.3);
-
-        this.tweens.add({targets:player, alpha:0, duration:80, yoyo:true, repeat:8});
-        this.time.delayedCall(900,()=>{this.isInvulnerable=false; player.setAlpha(1);});
-
-        if(this.hp<=0) this.showEndScreen(false);
-    }
-
-    showEndScreen(victory){
-        this.physics.pause();
-        this.endText.setText(victory?'ALL 25 HEARTS\nCOLLECTED!':'YOU DIE!');
-        this.endText.setFill(victory?'#fff2c1':'#ff6b6b');
-        this.endGroup.setAlpha(1);
-    }
-
-    spawnPlatforms(){
-        const keys=['pf1','pf2','pf3','pf4'];
-        const movingIdx=[2,6,10,14,18,22,26,29];
-        let x=400;
-        for(let i=0;i<30;i++){
-            const y=Phaser.Math.Between(220,520);
-            const key=Phaser.Utils.Array.GetRandom(keys);
-
-            if(movingIdx.includes(i)){
-                const p=this.movingPlatforms.create(x,y,key);
-                p.startY=y; p.range=120; p.speed=50;
-                p.body.setVelocityY(p.speed);
+        this.physics.add.collider(this.player,this.enemies,(player,enemy)=>{
+            if(player.body.velocity.y > 0 && player.y < enemy.y){
+                enemy.disableBody(true,true);
+                const heart = this.physics.add.image(enemy.x,enemy.y,'smallHeart');
+                heart.setBounce(0.3);
+                this.physics.add.collider(heart,this.ground);
+                this.physics.add.overlap(player,heart,(p,h)=>{
+                    h.destroy();
+                    this.hp = Math.min(this.hp+1,3);
+                });
+                player.setVelocityY(-300);
             } else {
-                this.staticPlatforms.create(x,y,key).refreshBody();
+                this.endScreen(false);
             }
-            x+=Phaser.Math.Between(260,320);
-        }
+        });
     }
 
-    spawnHeartsSafe(count){
-        const hearts=[]; 
-        const platforms=[...this.staticPlatforms.getChildren(), ...this.movingPlatforms.getChildren()];
-        while(hearts.length<count){
-            const x=Phaser.Math.Between(200,this.worldWidth-200);
-            const y=Phaser.Math.Between(150,500);
-            const rect=new Phaser.Geom.Rectangle(x-25,y-25,50,50);
+    endScreen(win){
+        this.physics.pause();
 
-            let bad=false;
-            for(const h of hearts) if(Phaser.Geom.Intersects.RectangleToRectangle(rect,h)) bad=true;
-            for(const p of platforms) if(Phaser.Geom.Intersects.RectangleToRectangle(rect,p.getBounds())) bad=true;
-
-            if(!bad){
-                this.hearts.create(x,y,'heart').setDisplaySize(50,50).refreshBody();
-                hearts.push(rect);
-            }
-        }
-    }
-
-    createTouchControls(){
         const { width, height } = this.scale;
-        const makeBtn=(x,y,key)=>{
-            const b=this.add.image(x,y,key).setScrollFactor(0).setAlpha(0.55).setInteractive();
-            b.on('pointerdown',()=>b.setAlpha(0.85));
-            b.on('pointerup',()=>b.setAlpha(0.55));
-            b.on('pointerout',()=>b.setAlpha(0.55));
-            return b;
-        };
-        const l=makeBtn(130,height-120,'btn_left');
-        l.on('pointerdown',()=>this.player.touchLeft=true);
-        l.on('pointerup',()=>this.player.touchLeft=false);
-        l.on('pointerout',()=>this.player.touchLeft=false);
+        this.add.rectangle(
+            this.cameras.main.scrollX,
+            0,
+            width,
+            height,
+            0x000000,
+            0.6
+        ).setOrigin(0);
 
-        const r=makeBtn(260,height-120,'btn_right');
-        r.on('pointerdown',()=>this.player.touchRight=true);
-        r.on('pointerup',()=>this.player.touchRight=false);
-        r.on('pointerout',()=>this.player.touchRight=false);
+        const style = { fontFamily:'UnifrakturCook', fontSize:'64px', fill:'#e8d9b0' };
 
-        const j=makeBtn(width-140,height-120,'btn_jump');
-        j.on('pointerdown',()=>this.player.touchJump=true);
-        j.on('pointerup',()=>this.player.touchJump=false);
-        j.on('pointerout',()=>this.player.touchJump=false);
+        this.add.text(
+            this.cameras.main.scrollX + width/2,
+            height/3,
+            win?'YOU WIN':'YOU DIED',
+            style
+        ).setOrigin(0.5);
+
+        const play = this.add.text(
+            this.cameras.main.scrollX + width/2,
+            height/2,
+            'PLAY',
+            style
+        ).setOrigin(0.5).setInteractive();
+
+        play.on('pointerdown',()=>this.scene.restart());
+
+        const exit = this.add.text(
+            this.cameras.main.scrollX + width/2,
+            height/2+100,
+            'EXIT',
+            style
+        ).setOrigin(0.5).setInteractive();
+
+        exit.on('pointerdown',()=>this.scene.start('MenuScene'));
     }
 
-    update(){
-        this.bg.tilePositionX=this.cameras.main.scrollX;
-        this.movingPlatforms.getChildren().forEach(p=>{
-            if(p.y>p.startY+p.range) p.body.setVelocityY(-p.speed);
-            if(p.y<p.startY-p.range) p.body.setVelocityY(p.speed);
+    update() {
+        this.bgFar.tilePositionX = this.cameras.main.scrollX * 0.2;
+        this.bgMid.tilePositionX = this.cameras.main.scrollX * 0.4;
+        this.bgNear.tilePositionX= this.cameras.main.scrollX * 0.6;
+
+        if(this.cursors.left.isDown){
+            this.player.setVelocityX(-200);
+            this.player.anims.play('walk',true);
+            this.player.setFlipX(true);
+        } else if(this.cursors.right.isDown){
+            this.player.setVelocityX(200);
+            this.player.anims.play('walk',true);
+            this.player.setFlipX(false);
+        } else {
+            this.player.setVelocityX(0);
+            this.player.anims.stop();
+        }
+
+        if(this.cursors.up.isDown && this.player.body.blocked.down){
+            this.player.setVelocityY(-500);
+        }
+
+        this.enemies.children.iterate(enemy=>{
+            if(!enemy.active) return;
+            enemy.setVelocityX(80 * enemy.direction);
+            if(Math.abs(enemy.x - enemy.startX) > 200){
+                enemy.direction *= -1;
+            }
         });
     }
 }
 
-// ======================= CONFIG =======================
+/* ===================== CONFIG ===================== */
 new Phaser.Game({
     type: Phaser.AUTO,
-    width: 1248,
-    height: 832,
-    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-    physics: { default:'arcade', arcade:{gravity:{y:900}, debug:false} },
-    scene: [MenuScene, SelectScene, GameScene]
+    width: 1280,
+    height: 720,
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+    },
+    physics: {
+        default:'arcade',
+        arcade:{ gravity:{y:900}, debug:false }
+    },
+    scene:[MenuScene,SelectScene,GameScene]
 });
