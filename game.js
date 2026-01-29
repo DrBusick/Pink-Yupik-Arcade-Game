@@ -50,6 +50,24 @@ class MenuScene extends Phaser.Scene {
 
         play.on('pointerover', () => this.hoverSound.play());
         play.on('pointerdown', () => this.scene.start('SelectScene'));
+
+        const exit = this.add.text(width/2, height/2 + 100, 'EXIT', btnStyle)
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor:true });
+
+        exit.on('pointerover', () => {
+            this.hoverSound.play();
+            exit.setScale(1.15);
+            exit.setTint(0xff6b6b);
+        });
+        exit.on('pointerout', () => {
+            exit.setScale(1);
+            exit.clearTint();
+        });
+        exit.on('pointerdown', () => {
+            this.hoverSound.play();
+            window.close();
+        });
     }
 
     update() {
@@ -110,10 +128,12 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         this.setCollideWorldBounds(true);
         this.setBodySize(90,120).setOffset(26,18);
 
-        this.speed = 260;
-        this.accel = 1200;
-        this.jumpVelocity = 520;
+        this.speed = 180;
+        this.accel = 900;
+        this.body.setMaxVelocity(this.speed, 1000);
+        this.body.setDragX(1200);
 
+        this.jumpVelocity = 520;
         this.jumpCount = 0;
         this.maxJumps = 3;
         this.facing = 'right';
@@ -177,19 +197,26 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.chaseRange=420;
         this.stopRange=60;
 
-        this.play('enemy_walk');
+        this.play('enemy_idle');
     }
 
-    preUpdate(){
+    preUpdate(time,delta){
+        super.preUpdate(time,delta);
+
         const p=this.scene.player;
         if(!p) return;
 
         const d=Phaser.Math.Distance.Between(this.x,this.y,p.x,p.y);
+
         if(d<this.chaseRange && d>this.stopRange){
             const dir=p.x<this.x?-1:1;
             this.setVelocityX(this.speed*dir);
             this.setFlipX(dir<0);
-        } else this.setVelocityX(0);
+            this.anims.play('enemy_walk',true);
+        } else {
+            this.setVelocityX(0);
+            this.anims.play('enemy_idle',true);
+        }
     }
 }
 
@@ -256,6 +283,11 @@ class GameScene extends Phaser.Scene {
             frames:this.anims.generateFrameNumbers(`${e}_walk`),
             frameRate:8,repeat:-1
         });
+        this.anims.create({
+            key:'enemy_idle',
+            frames:[{key:`${e}_idle`}],
+            repeat:-1
+        });
 
         this.jumpSound=this.sound.add('jump');
         this.collectSound=this.sound.add('collect');
@@ -300,7 +332,7 @@ class GameScene extends Phaser.Scene {
             this.handleEnemyCollision,null,this
         );
 
-        // Collectible hearts (25)
+        // Hearts to collect
         this.hearts=this.physics.add.staticGroup();
         this.spawnHeartsSafe(25);
         this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
@@ -322,13 +354,34 @@ class GameScene extends Phaser.Scene {
             {fontFamily:'UnifrakturCook',fontSize:'96px',fill:'#fff2c1',align:'center'}
         ).setOrigin(0.5).setScrollFactor(0).setAlpha(0);
 
-        // Heart drops
-        this.dropHearts=this.physics.add.group();
-        this.physics.add.collider(this.dropHearts,this.ground);
-        this.physics.add.overlap(
-            this.player,this.dropHearts,
-            this.collectDropHeart,null,this
-        );
+        // Game Over UI
+        this.gameOverGroup=this.add.container(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY
+        ).setScrollFactor(0).setAlpha(0);
+
+        const dieText=this.add.text(0,-80,'YOU DIE!',{
+            fontFamily:'UnifrakturCook',
+            fontSize:'96px',
+            fill:'#ff6b6b'
+        }).setOrigin(0.5);
+
+        const retry=this.add.text(0,20,'PLAY',{
+            fontFamily:'UnifrakturCook',
+            fontSize:'48px',
+            fill:'#e8d9b0'
+        }).setOrigin(0.5).setInteractive();
+
+        const menu=this.add.text(0,90,'MENU',{
+            fontFamily:'UnifrakturCook',
+            fontSize:'48px',
+            fill:'#e8d9b0'
+        }).setOrigin(0.5).setInteractive();
+
+        retry.on('pointerdown',()=>this.scene.restart({player:this.selectedPlayer}));
+        menu.on('pointerdown',()=>this.scene.start('MenuScene'));
+
+        this.gameOverGroup.add([dieText,retry,menu]);
 
         this.cameras.main.startFollow(this.player,true,0.12,0.12);
         this.cameras.main.setBounds(0,0,this.worldWidth,this.worldHeight);
@@ -341,16 +394,12 @@ class GameScene extends Phaser.Scene {
         if(player.body.velocity.y>0 && player.y<enemy.y-20){
             enemy.disableBody(true,true);
             player.setVelocityY(-350);
-            this.spawnHeartDrop(enemy.x,enemy.y);
         } else this.onPlayerHit(player,enemy);
     }
 
-    onPlayerHit(player,enemy){
+    onPlayerHit(player){
         if(this.isInvulnerable) return;
         this.isInvulnerable=true;
-
-        const dir=player.x<enemy.x?-1:1;
-        player.setVelocity(400*dir,-250);
 
         this.hp--;
         if(this.hpIcons[this.hp])
@@ -368,21 +417,12 @@ class GameScene extends Phaser.Scene {
             this.isInvulnerable=false;
             player.setAlpha(1);
         });
-    }
 
-    spawnHeartDrop(x,y){
-        const h=this.dropHearts.create(x,y,'heart');
-        h.setVelocity(
-            Phaser.Math.Between(-120,120),-300
-        );
-        h.setScale(0.4);
-    }
-
-    collectDropHeart(player,heart){
-        heart.destroy();
-        if(this.hp<this.maxHP){
-            this.hp++;
-            this.hpIcons[this.hp-1].setAlpha(1);
+        if(this.hp<=0){
+            player.setVelocity(0,0);
+            player.anims.stop();
+            this.physics.pause();
+            this.gameOverGroup.setAlpha(1);
         }
     }
 
@@ -462,7 +502,6 @@ class GameScene extends Phaser.Scene {
 
     update(){
         this.bg.tilePositionX=this.cameras.main.scrollX;
-
         this.movingPlatforms.getChildren().forEach(p=>{
             if(p.y>p.startY+p.range) p.body.setVelocityY(-p.speed);
             if(p.y<p.startY-p.range) p.body.setVelocityY(p.speed);
