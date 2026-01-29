@@ -4,7 +4,6 @@
 let selectedPlayer = 'player1';
 let tg = null;
 
-// Telegram WebApp
 if (window.Telegram && window.Telegram.WebApp) {
     tg = window.Telegram.WebApp;
     tg.ready();
@@ -26,7 +25,6 @@ class MenuScene extends Phaser.Scene {
 
     create(){
         const {width,height} = this.scale;
-
         this.bgFar  = this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
         this.bgMid  = this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
         this.bgNear = this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
@@ -82,14 +80,12 @@ class SelectScene extends Phaser.Scene {
 
     create(){
         const {width,height} = this.scale;
-
         this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
         this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
         this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
         document.fonts.ready.then(()=>{
             const titleStyle = { fontFamily:'UnifrakturCook', fontSize:'64px', fill:'#e8d9b0' };
-
             this.add.text(width/2,120,'Select Character', titleStyle).setOrigin(0.5);
 
             const y = height/2 + 120;
@@ -268,6 +264,7 @@ class GameScene extends Phaser.Scene {
     create(){
         const {width,height} = this.scale;
 
+        // Анімації
         this.anims.create({key:'idle',frames:[{key:`${this.selectedPlayer}_idle`}],repeat:-1});
         this.anims.create({key:'walk',frames:this.anims.generateFrameNumbers(`${this.selectedPlayer}_walk`),frameRate:10,repeat:-1});
         this.anims.create({key:`${this.enemyType}_idle`,frames:[{key:`${this.enemyType}_idle`}],repeat:-1});
@@ -329,59 +326,54 @@ class GameScene extends Phaser.Scene {
         this.physics.add.collider(this.enemies,this.platforms);
         this.physics.add.collider(this.enemies,this.movingPlatforms);
 
-        // Стрибок на ворога зверху
-        this.physics.add.collider(this.player,this.enemies,(p,e)=>{
-            if(!e.isDead && p.body.velocity.y>0 && (p.y + p.body.height/2) < e.y){
-                e.die();
-                p.setVelocityY(-350);
-            } else if(!e.isDead){
+        // СМЕРТЬ ВОРОГА ПРИ СТРИБУ ЗВЕРХУ
+        this.physics.add.collider(this.player,this.enemies,(player,enemy)=>{
+            if(enemy.isDead) return;
+
+            const playerBounds = player.getBounds();
+            const enemyBounds = enemy.getBounds();
+
+            if(player.body.velocity.y>0 && playerBounds.bottom <= enemyBounds.top + 10){
+                enemy.die();
+                player.setVelocityY(-350);
+            } else {
                 this.damage();
             }
         });
 
-        // MOBILE BUTTONS (спрайти з UI)
+        // MOBILE BUTTONS
         if(this.sys.game.device.os.android || this.sys.game.device.os.iOS){
             this.createMobileButtons();
         }
     }
 
     update(){
-        this.bg.tilePositionX = this.cameras.main.scrollX * 0.3;
+        this.bg.tilePositionX=this.cameras.main.scrollX*0.3;
 
+        // ENEMIES PATROL & JUMP
         this.enemies.getChildren().forEach(e=>{
             if(e.isDead) return;
+            const p=this.player;
+            const dist=Phaser.Math.Distance.Between(e.x,e.y,p.x,p.y);
 
-            const p = this.player;
-            const distX = p.x - e.x;
-            const distY = p.y - e.y;
-            const absDist = Phaser.Math.Distance.Between(e.x, e.y, p.x, p.y);
+            const plats=this.platforms.getChildren().concat(this.movingPlatformsList);
+            const platBelow=plats.find(pl=>Math.abs(pl.x - e.x) < pl.displayWidth/2 && Math.abs(pl.y - e.y) < 10);
+            const playerPlat=plats.find(pl=>Math.abs(pl.x - p.x)<pl.displayWidth/2 && Math.abs(pl.y - p.y)<10);
 
-            // Платформи
-            const plats = this.platforms.getChildren().concat(this.movingPlatformsList);
-            const platBelow = plats.find(pl=>Math.abs(pl.x - e.x)<pl.displayWidth/2+10 && Math.abs(pl.y - e.y)<10);
-            const playerPlat = plats.find(pl=>Math.abs(pl.x - p.x)<pl.displayWidth/2+10 && Math.abs(pl.y - p.y)<10);
-
-            // Патрулювання та рух до гравця
-            let dir = e.direction || 1;
-            if(absDist<450){
-                dir = distX<0?-1:1;
-                e.setFlipX(dir<0);
-            } else {
-                if(e.x <= 50) dir=1;
-                if(e.x >= this.worldWidth-50) dir=-1;
-                e.setFlipX(dir<0);
+            // Патрулювання всього рівня
+            if(platBelow){
+                if(e.x <= platBelow.x - platBelow.displayWidth/2) e.direction=1;
+                if(e.x >= platBelow.x + platBelow.displayWidth/2) e.direction=-1;
+                e.setFlipX(e.direction<0);
+                e.setVelocityX(e.direction*e.speed);
             }
 
             // Стрибки за гравцем
-            if(platBelow && playerPlat && e.body.blocked.down){
-                const heightDiff = platBelow.y - playerPlat.y;
-                if(heightDiff>20) e.setVelocityY(-this.player.jumpVelocity*0.7);
+            if(dist<450 && playerPlat && platBelow){
+                if(p.y < e.y && e.body.blocked.down){
+                    e.setVelocityY(-p.jumpVelocity*0.7);
+                }
             }
-
-            e.setVelocityX(dir*e.speed);
-            e.direction=dir;
-
-            if(platBelow && platBelow.isMoving) e.y += platBelow.speed*platBelow.direction*(1/60);
 
             if(Math.abs(e.body.velocity.x)>5) e.anims.play(`${e.type}_walk`,true);
             else e.anims.play(`${e.type}_idle`,true);
@@ -403,7 +395,7 @@ class GameScene extends Phaser.Scene {
         for(let i=0;i<20;i++){
             const y=Phaser.Math.Between(260,380);
             let isMoving=false;
-            if(!lastWasMoving && i<20 && Phaser.Math.Between(0,4)<1){
+            if(!lastWasMoving && Phaser.Math.Between(0,4)<1){
                 isMoving=true; 
                 lastWasMoving=true;
             } else lastWasMoving=false;
@@ -465,53 +457,44 @@ class GameScene extends Phaser.Scene {
 
         jump.on('pointerdown',()=>this.player.jump=true);
         jump.on('pointerup',()=>this.player.jump=false);
-
-        [left,right,jump].forEach(btn=>{
-            this.tweens.add({
-                targets:btn,
-                scale:1.1,
-                duration:600,
-                yoyo:true,
-                repeat:-1,
-                ease:'Sine.easeInOut'
-            });
-        });
     }
 }
 
 /* =========================================================
    WIN / LOSE SCENES
 ========================================================= */
-class EndScene extends Phaser.Scene {
-    constructor(key,text){ super(key); this.label=text; }
-    create(data){
+class WinScene extends Phaser.Scene {
+    constructor(){super('WinScene');}
+    init(data){this.player=data.player;}
+    create(){
         const {width,height}=this.scale;
-        document.fonts.ready.then(()=>{
-            const style={ fontFamily:'UnifrakturCook', fontSize:'56px', fill:'#e8d9b0' };
-            this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
-            this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
-            this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
-            this.add.text(width/2,height/3,this.label,{fontFamily:'UnifrakturCook', fontSize:'96px', fill:'#e8d9b0'}).setOrigin(0.5);
-            this.playBtn = this.add.text(width/2,height/2,'PLAY',style).setOrigin(0.5)
-                .setInteractive().on('pointerdown',()=>this.scene.start('GameScene',{player:data.player}));
-            this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',style).setOrigin(0.5)
-                .setInteractive().on('pointerdown',()=>this.scene.start('MenuScene'));
-            this.tweens.add({targets:[this.playBtn,this.exitBtn],scale:1.1,duration:600,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
-        });
+        this.add.text(width/2,height/2,'YOU WIN! 🎉',{fontSize:'64px',fill:'#ffde59',fontFamily:'UnifrakturCook'}).setOrigin(0.5);
+        this.input.once('pointerdown',()=>this.scene.start('MenuScene'));
     }
 }
 
-class WinScene extends EndScene { constructor(){ super('WinScene','YOU WIN 🏆'); } }
-class LoseScene extends EndScene { constructor(){ super('LoseScene','GAME OVER 💀'); } }
+class LoseScene extends Phaser.Scene {
+    constructor(){super('LoseScene');}
+    init(data){this.player=data.player;}
+    create(){
+        const {width,height}=this.scale;
+        this.add.text(width/2,height/2,'GAME OVER 💀',{fontSize:'64px',fill:'#ff4a4a',fontFamily:'UnifrakturCook'}).setOrigin(0.5);
+        this.input.once('pointerdown',()=>this.scene.start('MenuScene'));
+    }
+}
 
 /* =========================================================
-   CONFIG
+   GAME CONFIG
 ========================================================= */
-new Phaser.Game({
-    type:Phaser.AUTO,
-    width:1248,
-    height:832,
-    scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
-    physics:{default:'arcade',arcade:{gravity:{y:900},debug:false}},
+const config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 832,
+    physics:{
+        default:'arcade',
+        arcade:{gravity:{y:1200},debug:false}
+    },
     scene:[MenuScene,SelectScene,GameScene,WinScene,LoseScene]
-});
+};
+
+const game=new Phaser.Game(config);
