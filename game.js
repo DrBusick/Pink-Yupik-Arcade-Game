@@ -2,6 +2,14 @@
    GLOBAL
 ========================================================= */
 let selectedPlayer = 'player1';
+let tg = null;
+
+// ======================= Telegram WebApp ========================
+if (window.Telegram && window.Telegram.WebApp) {
+    tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+}
 
 /* =========================================================
    MENU SCENE
@@ -118,23 +126,25 @@ class Player extends Phaser.Physics.Arcade.Sprite {
             left:'A', right:'D', up:'W',
             left2:'LEFT', right2:'RIGHT', up2:'UP'
         });
+
+        // Mobile controls
+        this.moveLeft=false;
+        this.moveRight=false;
+        this.jump=false;
     }
 
     preUpdate(t,d){
         super.preUpdate(t,d);
 
-        const l=this.keys.left.isDown||this.keys.left2.isDown;
-        const r=this.keys.right.isDown||this.keys.right2.isDown;
+        const l=this.keys.left.isDown||this.keys.left2.isDown||this.moveLeft;
+        const r=this.keys.right.isDown||this.keys.right2.isDown||this.moveRight;
 
         if(l) this.setAccelerationX(-this.accel);
         else if(r) this.setAccelerationX(this.accel);
         else this.setAccelerationX(0);
 
-        if(
-            (Phaser.Input.Keyboard.JustDown(this.keys.up) ||
-             Phaser.Input.Keyboard.JustDown(this.keys.up2)) &&
-            this.jumpCount<this.maxJumps
-        ){
+        if(((Phaser.Input.Keyboard.JustDown(this.keys.up) || Phaser.Input.Keyboard.JustDown(this.keys.up2)) || this.jump) &&
+            this.jumpCount<this.maxJumps){
             this.setVelocityY(-this.jumpVelocity);
             this.jumpCount++;
         }
@@ -287,6 +297,11 @@ class GameScene extends Phaser.Scene {
         this.physics.add.collider(this.player,this.platforms);
         this.physics.add.collider(this.player,this.movingPlatforms);
 
+        // ================= MOBILE BUTTONS =================
+        if(this.sys.game.device.os.android || this.sys.game.device.os.iOS){
+            this.createMobileButtons();
+        }
+
         /* CAMERA */
         this.cameras.main.startFollow(this.player,true,0.12,0.12);
         this.cameras.main.setBounds(0,0,this.worldWidth,this.worldHeight);
@@ -327,9 +342,31 @@ class GameScene extends Phaser.Scene {
             this.heartText.setText(`❤️ ${this.heartsCollected} / ${this.totalHearts}`);
 
             if(this.heartsCollected>=this.totalHearts){
-                this.scene.start('WinScene',{player:this.selectedPlayer});
+                this.showVictoryMessage();
             }
         });
+    }
+
+    createMobileButtons(){
+        const left=this.add.dom(20,this.scale.height-80,'div','class=button','◀').setOrigin(0);
+        const right=this.add.dom(100,this.scale.height-80,'div','class=button','▶').setOrigin(0);
+        const jump=this.add.dom(this.scale.width-80,this.scale.height-80,'div','class=button','▲').setOrigin(0);
+
+        left.addListener('pointerdown'); left.on('pointerdown',()=>this.player.moveLeft=true);
+        left.addListener('pointerup'); left.on('pointerup',()=>this.player.moveLeft=false);
+
+        right.addListener('pointerdown'); right.on('pointerdown',()=>this.player.moveRight=true);
+        right.addListener('pointerup'); right.on('pointerup',()=>this.player.moveRight=false);
+
+        jump.addListener('pointerdown'); jump.on('pointerdown',()=>this.player.jump=true);
+        jump.addListener('pointerup'); jump.on('pointerup',()=>this.player.jump=false);
+    }
+
+    showVictoryMessage(){
+        const text=this.add.text(this.cameras.main.scrollX+this.cameras.main.width/2,
+            this.cameras.main.scrollY+this.cameras.main.height/2,
+            '🎉 Всі серця зібрано! 🎉',{ fontSize:'64px', fill:'#ff0', backgroundColor:'#000'})
+            .setOrigin(0.5).setDepth(10);
     }
 
     damage(){
@@ -405,7 +442,7 @@ class WinScene extends EndScene {
     constructor(){ super('WinScene','YOU WIN 🏆'); }
 }
 class LoseScene extends EndScene {
-    constructor(){ super('LoseScene','GAME OVER'); }
+    constructor(){ super('LoseScene','GAME OVER 💀'); }
 }
 
 /* =========================================================
