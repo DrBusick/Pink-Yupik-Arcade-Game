@@ -22,6 +22,9 @@ class MenuScene extends Phaser.Scene {
         this.load.image('bg_far','assets/backgrounds/bg_far.png');
         this.load.image('bg_mid','assets/backgrounds/bg_mid.png');
         this.load.image('bg_near','assets/backgrounds/bg_near.png');
+
+        this.load.audio('hover','assets/sounds/hover.mp3');
+        this.load.audio('click','assets/sounds/click.mp3');
     }
 
     create(){
@@ -31,6 +34,9 @@ class MenuScene extends Phaser.Scene {
         this.bgMid  = this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
         this.bgNear = this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
+        this.sound.add('hover');
+        this.sound.add('click');
+
         document.fonts.ready.then(()=>{
             const titleStyle = { fontFamily:'UnifrakturCook', fontSize:'120px', fill:'#e8d9b0' };
             const optionStyle = { fontFamily:'UnifrakturCook', fontSize:'56px', fill:'#e8d9b0' };
@@ -39,18 +45,38 @@ class MenuScene extends Phaser.Scene {
 
             this.playBtn = this.add.text(width/2,height/2,'PLAY',optionStyle)
                 .setOrigin(0.5)
-                .setInteractive()
-                .on('pointerdown',()=>this.scene.start('SelectScene'));
+                .setInteractive({ useHandCursor: true })
+                .on('pointerover',()=>{
+                    this.sound.play('hover');
+                    this.playBtn.setScale(1.1);
+                })
+                .on('pointerout',()=>{
+                    this.playBtn.setScale(1);
+                })
+                .on('pointerdown',()=>{
+                    this.sound.play('click');
+                    this.scene.start('SelectScene');
+                });
 
             this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',optionStyle)
                 .setOrigin(0.5)
-                .setInteractive()
-                .on('pointerdown',()=>window.Telegram?.WebApp?.close());
+                .setInteractive({ useHandCursor: true })
+                .on('pointerover',()=>{
+                    this.sound.play('hover');
+                    this.exitBtn.setScale(1.1);
+                })
+                .on('pointerout',()=>{
+                    this.exitBtn.setScale(1);
+                })
+                .on('pointerdown',()=>{
+                    this.sound.play('click');
+                    window.Telegram?.WebApp?.close();
+                });
 
             this.tweens.add({
                 targets:[this.playBtn,this.exitBtn],
-                scale:1.1,
-                duration:600,
+                scale:1.05,
+                duration:700,
                 yoyo:true,
                 repeat:-1,
                 ease:'Sine.easeInOut'
@@ -78,6 +104,9 @@ class SelectScene extends Phaser.Scene {
         this.load.image('platform','assets/platforms/platform_1.png');
         this.load.image('player1_idle','assets/player1/idle.png');
         this.load.image('player2_idle','assets/player2/idle.png');
+
+        this.load.audio('hover','assets/sounds/hover.mp3');
+        this.load.audio('click','assets/sounds/click.mp3');
     }
 
     create(){
@@ -86,6 +115,9 @@ class SelectScene extends Phaser.Scene {
         this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
         this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
         this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
+
+        this.sound.add('hover');
+        this.sound.add('click');
 
         document.fonts.ready.then(()=>{
             const titleStyle = { fontFamily:'UnifrakturCook', fontSize:'64px', fill:'#e8d9b0' };
@@ -97,17 +129,21 @@ class SelectScene extends Phaser.Scene {
             this.add.image(width/2+220,y,'platform');
 
             const p1=this.add.image(width/2-220,y-110,'player1_idle')
-                .setInteractive()
-                .on('pointerdown',()=>this.scene.start('GameScene',{player:'player1'}));
+                .setInteractive({ useHandCursor: true })
+                .on('pointerover',()=>{ this.sound.play('hover'); p1.setScale(1.1); })
+                .on('pointerout',()=>{ p1.setScale(1); })
+                .on('pointerdown',()=>{ this.sound.play('click'); this.scene.start('GameScene',{player:'player1'}); });
 
             const p2=this.add.image(width/2+220,y-110,'player2_idle')
-                .setInteractive()
-                .on('pointerdown',()=>this.scene.start('GameScene',{player:'player2'}));
+                .setInteractive({ useHandCursor: true })
+                .on('pointerover',()=>{ this.sound.play('hover'); p2.setScale(1.1); })
+                .on('pointerout',()=>{ p2.setScale(1); })
+                .on('pointerdown',()=>{ this.sound.play('click'); this.scene.start('GameScene',{player:'player2'}); });
 
             this.tweens.add({
                 targets:[p1,p2],
-                scale:1.1,
-                duration:600,
+                scale:1.05,
+                duration:700,
                 yoyo:true,
                 repeat:-1,
                 ease:'Sine.easeInOut'
@@ -253,10 +289,15 @@ class GameScene extends Phaser.Scene {
         this.load.image('heart_collect','assets/items/heart_v4.png');
         this.load.image('heart_small','assets/items/heart_small.png');
 
+        this.load.image('btn_left','assets/ui/btn_left.png');
+        this.load.image('btn_right','assets/ui/btn_right.png');
+        this.load.image('btn_jump','assets/ui/btn_jump.png');
+
         this.load.audio('jump','assets/sounds/jump.mp3');
         this.load.audio('collect','assets/sounds/collect.mp3');
         this.load.audio('walk','assets/sounds/walk.mp3');
         this.load.audio('hover','assets/sounds/hover.mp3');
+        this.load.audio('click','assets/sounds/click.mp3');
     }
 
     create(){
@@ -332,7 +373,7 @@ class GameScene extends Phaser.Scene {
             }
         });
 
-        // MOBILE BUTTONS
+        // MOBILE BUTTONS (тільки на мобільних)
         if(this.sys.game.device.os.android || this.sys.game.device.os.iOS){
             this.createMobileButtons();
         }
@@ -440,29 +481,34 @@ class GameScene extends Phaser.Scene {
     }
 
     createMobileButtons(){
-        const left=this.add.dom(20,this.scale.height-80,'div','class=button','◀').setOrigin(0);
-        const right=this.add.dom(100,this.scale.height-80,'div','class=button','▶').setOrigin(0);
-        const jump=this.add.dom(this.scale.width-80,this.scale.height-80,'div','class=button','▲').setOrigin(0);
+        const y = this.scale.height - 80;
 
-        [left,right,jump].forEach(btn=>{
+        const left = this.add.image(80, y, 'btn_left').setScrollFactor(0).setInteractive();
+        const right = this.add.image(160, y, 'btn_right').setScrollFactor(0).setInteractive();
+        const jump = this.add.image(this.scale.width - 80, y, 'btn_jump').setScrollFactor(0).setInteractive();
+
+        [left, right, jump].forEach(btn=>{
             this.tweens.add({
-                targets:btn,
-                scale:1.1,
-                duration:600,
-                yoyo:true,
-                repeat:-1,
-                ease:'Sine.easeInOut'
+                targets: btn,
+                scale: 1.1,
+                duration: 600,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
             });
         });
 
-        left.addListener('pointerdown'); left.on('pointerdown',()=>this.player.moveLeft=true);
-        left.addListener('pointerup'); left.on('pointerup',()=>this.player.moveLeft=false);
+        left.on('pointerdown', ()=> this.player.moveLeft = true);
+        left.on('pointerup',   ()=> this.player.moveLeft = false);
+        left.on('pointerout',  ()=> this.player.moveLeft = false);
 
-        right.addListener('pointerdown'); right.on('pointerdown',()=>this.player.moveRight=true);
-        right.addListener('pointerup'); right.on('pointerup',()=>this.player.moveRight=false);
+        right.on('pointerdown', ()=> this.player.moveRight = true);
+        right.on('pointerup',   ()=> this.player.moveRight = false);
+        right.on('pointerout',  ()=> this.player.moveRight = false);
 
-        jump.addListener('pointerdown'); jump.on('pointerdown',()=>this.player.jump=true);
-        jump.addListener('pointerup'); jump.on('pointerup',()=>this.player.jump=false);
+        jump.on('pointerdown', ()=> this.player.jump = true);
+        jump.on('pointerup',   ()=> this.player.jump = false);
+        jump.on('pointerout',  ()=> this.player.jump = false);
     }
 }
 
@@ -480,10 +526,16 @@ class EndScene extends Phaser.Scene {
             this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
             this.add.text(width/2,height/3,this.label,{fontFamily:'UnifrakturCook', fontSize:'96px', fill:'#e8d9b0'}).setOrigin(0.5);
             this.playBtn = this.add.text(width/2,height/2,'PLAY',style).setOrigin(0.5)
-                .setInteractive().on('pointerdown',()=>this.scene.start('GameScene',{player:data.player}));
+                .setInteractive({ useHandCursor: true })
+                .on('pointerover',()=>{ this.sound.play('hover'); this.playBtn.setScale(1.1); })
+                .on('pointerout',()=>{ this.playBtn.setScale(1); })
+                .on('pointerdown',()=>{ this.sound.play('click'); this.scene.start('GameScene',{player:data.player}); });
             this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',style).setOrigin(0.5)
-                .setInteractive().on('pointerdown',()=>this.scene.start('MenuScene'));
-            this.tweens.add({targets:[this.playBtn,this.exitBtn],scale:1.1,duration:600,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
+                .setInteractive({ useHandCursor: true })
+                .on('pointerover',()=>{ this.sound.play('hover'); this.exitBtn.setScale(1.1); })
+                .on('pointerout',()=>{ this.exitBtn.setScale(1); })
+                .on('pointerdown',()=>{ this.sound.play('click'); this.scene.start('MenuScene'); });
+            this.tweens.add({targets:[this.playBtn,this.exitBtn],scale:1.05,duration:700,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
         });
     }
 }
