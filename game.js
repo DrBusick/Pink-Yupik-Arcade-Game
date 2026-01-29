@@ -411,28 +411,27 @@ class GameScene extends Phaser.Scene {
 /* =========================================================
    WIN / LOSE SCENES
 ========================================================= */
-class EndScene extends Phaser.Scene{
+class EndScene extends Phaser.Scene {
     constructor(key,text){ super(key); this.label=text; }
     create(data){
         const {width,height}=this.scale;
         document.fonts.ready.then(()=>{
-            const style={fontFamily:'gameFont', fontSize:'56px', fill:'#e8d9b0'};
+            const style={ fontFamily:'UnifrakturCook', fontSize:'56px', fill:'#e8d9b0' };
             this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
             this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
             this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
-            this.add.text(width/2,height/3,this.label,{fontFamily:'gameFont',fontSize:'96px',fill:'#e8d9b0'}).setOrigin(0.5);
-
+            this.add.text(width/2,height/3,this.label,{fontFamily:'UnifrakturCook', fontSize:'96px', fill:'#e8d9b0'}).setOrigin(0.5);
             this.playBtn = this.add.text(width/2,height/2,'PLAY',style).setOrigin(0.5)
                 .setInteractive().on('pointerdown',()=>this.scene.start('GameScene',{player:data.player}));
             this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',style).setOrigin(0.5)
                 .setInteractive().on('pointerdown',()=>this.scene.start('MenuScene'));
-
             this.tweens.add({targets:[this.playBtn,this.exitBtn],scale:1.1,duration:600,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
         });
     }
 }
-class WinScene extends EndScene{constructor(){super('WinScene','YOU WIN 🏆');}}
-class LoseScene extends EndScene{constructor(){super('LoseScene','GAME OVER 💀');}}
+
+class WinScene extends EndScene { constructor(){ super('WinScene','YOU WIN 🏆'); } }
+class LoseScene extends EndScene { constructor(){ super('LoseScene','GAME OVER 💀'); } }
 
 /* =========================================================
    CONFIG
