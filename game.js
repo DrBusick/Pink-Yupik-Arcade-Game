@@ -22,7 +22,7 @@ class MenuScene extends Phaser.Scene {
         this.load.image('bg_near','assets/backgrounds/bg_near.png');
         this.load.audio('hover','assets/sounds/hover.mp3');
 
-        // UI кнопки (залишаю тут на майбутнє)
+        // UI кнопки
         this.load.image('play_btn','assets/UI/play_btn.png');
         this.load.image('exit_btn','assets/UI/exit_btn.png');
     }
@@ -34,7 +34,6 @@ class MenuScene extends Phaser.Scene {
 
         document.fonts.ready.then(()=>{
             const titleStyle = { fontFamily:'gameFont', fontSize:'120px', fill:'#e8d9b0' };
-
             this.add.text(width/2,height/3,'Pink Yupik Arcade', titleStyle).setOrigin(0.5);
 
             this.playBtn = this.add.image(width/2, height/2, 'play_btn')
@@ -186,14 +185,29 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.isDead=true;
         this.disableBody(true,true);
 
-        // випадає маленьке серце
+        // Випадає маленьке серце з анімацією
         const h = this.scene.physics.add.image(this.x,this.y-20,'heart_small')
-            .setScale(0.4).setBounce(0.4)
-            .setVelocity(Phaser.Math.Between(-80,80),-260)
-            .setCollideWorldBounds(true);
+            .setScale(0.4)
+            .setBounce(0.4)
+            .setCollideWorldBounds(true)
+            .setVelocity(Phaser.Math.Between(-100,100), -250)
+            .setAngularVelocity(Phaser.Math.Between(-200,200));
+
         this.scene.physics.add.collider(h,this.scene.ground);
         this.scene.physics.add.collider(h,this.scene.platforms);
         this.scene.physics.add.collider(h,this.scene.movingPlatforms);
+
+        // Пульсація серця
+        this.scene.tweens.add({
+            targets: h,
+            scale: 0.45,
+            duration: 500,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+
+        // Підбір серця гравцем
         this.scene.physics.add.overlap(this.scene.player,h,()=>{
             h.destroy();
             this.scene.hp = Math.min(this.scene.hp+1,this.scene.maxHP);
@@ -402,7 +416,6 @@ class GameScene extends Phaser.Scene {
     createMobileButtons(){
         const { width, height } = this.scale;
 
-        // Кнопки сенсорні
         const left = this.add.image(80, height-80, 'left_btn').setInteractive().setScrollFactor(0).setScale(0.8);
         const right = this.add.image(180, height-80, 'right_btn').setInteractive().setScrollFactor(0).setScale(0.8);
         const jump = this.add.image(width-80, height-80, 'jump_btn').setInteractive().setScrollFactor(0).setScale(0.8);
