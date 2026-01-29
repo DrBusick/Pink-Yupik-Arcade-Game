@@ -4,7 +4,7 @@
 let selectedPlayer = 'player1';
 let tg = null;
 
-// ======================= Telegram WebApp ========================
+// Telegram WebApp
 if (window.Telegram && window.Telegram.WebApp) {
     tg = window.Telegram.WebApp;
     tg.ready();
@@ -104,7 +104,6 @@ class SelectScene extends Phaser.Scene {
             .setInteractive()
             .on('pointerdown',()=>this.scene.start('GameScene',{player:'player2'}));
 
-        // Анімація кнопок персонажів
         this.tweens.add({
             targets:[p1,p2],
             scale:1.1,
@@ -221,16 +220,12 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.isDead=true;
         this.disableBody(true,true);
 
-        const h=this.scene.physics.add.image(
-            this.x,this.y-20,'heart_drop'
-        )
-        .setScale(0.4)
-        .setBounce(0.4)
-        .setVelocity(
-            Phaser.Math.Between(-80,80),
-            -260
-        )
-        .setCollideWorldBounds(true);
+        // маленьке серце для відновлення HP
+        const h = this.scene.physics.add.image(this.x, this.y - 20, 'heart_small')
+            .setScale(0.4)
+            .setBounce(0.4)
+            .setVelocity(Phaser.Math.Between(-80, 80), -260)
+            .setCollideWorldBounds(true);
 
         this.scene.physics.add.collider(h,this.scene.ground);
         this.scene.physics.add.collider(h,this.scene.platforms);
@@ -238,7 +233,7 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
 
         this.scene.physics.add.overlap(this.scene.player,h,()=>{
             h.destroy();
-            this.scene.hp=Math.min(this.scene.hp+1,this.scene.maxHP);
+            this.scene.hp = Math.min(this.scene.hp + 1, this.scene.maxHP);
             this.scene.hpIcons[this.scene.hp-1].setAlpha(1);
         });
     }
@@ -275,10 +270,10 @@ class GameScene extends Phaser.Scene {
         this.load.image('ground','assets/platforms/ground.png');
 
         for(let i=1;i<=4;i++)
-            this.load.image(`pf${i}`,`assets/platforms/platform_${i}.png`);
+            this.load.image(`pf${i}`,'assets/platforms/platform_'+i+'.png');
 
-        this.load.image('heart_collect','assets/items/heart_v4.png');
-        this.load.image('heart_drop','assets/items/heart_small.png');
+        this.load.image('heart_collect','assets/items/heart_v4.png'); // великі серця
+        this.load.image('heart_small','assets/items/heart_small.png');  // малі серця
     }
 
     create(){
@@ -320,20 +315,34 @@ class GameScene extends Phaser.Scene {
         /* UI */
         this.hpIcons=[];
         for(let i=0;i<this.maxHP;i++)
-            this.hpIcons.push(this.add.image(20+i*40,100,'heart_collect').setScrollFactor(0).setScale(0.3));
+            this.hpIcons.push(this.add.image(20+i*40,100,'heart_small').setScrollFactor(0).setScale(0.3));
 
         this.heartText=this.add.text(20,60,`❤️ 0 / ${this.totalHearts}`,{
             fontSize:'32px',fill:'#e8d9b0', fontFamily:'UnifrakturCook'
         }).setScrollFactor(0);
 
+        /* HEARTS (великий рахунок) */
+        this.hearts = this.physics.add.staticGroup();
+        this.spawnHeartsSafe(this.totalHearts);
+
+        this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
+            h.destroy();
+            this.heartsCollected++;
+            this.heartText.setText(`❤️ ${this.heartsCollected} / ${this.totalHearts}`);
+            if(this.heartsCollected>=this.totalHearts){
+                this.scene.start('WinScene',{player:this.selectedPlayer});
+            }
+        });
+
         /* ENEMIES */
-        this.enemies=this.physics.add.group();
+        this.enemies = this.physics.add.group();
         for(let i=0;i<5;i++)
-            this.enemies.add(new Enemy(this,800+i*900,620,this.enemyType));
+            this.enemies.add(new Enemy(this, 800+i*900, 620, this.enemyType));
 
         this.physics.add.collider(this.enemies,this.ground);
         this.physics.add.collider(this.enemies,this.platforms);
 
+        // Вбивство ворога зверху
         this.physics.add.collider(this.player,this.enemies,(p,e)=>{
             if(!e.isDead && p.body.velocity.y>0 && p.y<e.y){
                 e.die();
@@ -341,54 +350,6 @@ class GameScene extends Phaser.Scene {
             } else if(!e.isDead){
                 this.damage();
             }
-        });
-
-        /* HEARTS */
-        this.hearts=this.physics.add.staticGroup();
-        this.spawnHeartsSafe(this.totalHearts);
-
-        this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
-            h.destroy();
-            this.heartsCollected++;
-            this.heartText.setText(`❤️ ${this.heartsCollected} / ${this.totalHearts}`);
-
-            if(this.heartsCollected>=this.totalHearts){
-                this.showVictoryMessage();
-            }
-        });
-    }
-
-    createMobileButtons(){
-        const left=this.add.dom(20,this.scale.height-80,'div','class=button','◀').setOrigin(0);
-        const right=this.add.dom(100,this.scale.height-80,'div','class=button','▶').setOrigin(0);
-        const jump=this.add.dom(this.scale.width-80,this.scale.height-80,'div','class=button','▲').setOrigin(0);
-
-        left.addListener('pointerdown'); left.on('pointerdown',()=>this.player.moveLeft=true);
-        left.addListener('pointerup'); left.on('pointerup',()=>this.player.moveLeft=false);
-
-        right.addListener('pointerdown'); right.on('pointerdown',()=>this.player.moveRight=true);
-        right.addListener('pointerup'); right.on('pointerup',()=>this.player.moveRight=false);
-
-        jump.addListener('pointerdown'); jump.on('pointerdown',()=>this.player.jump=true);
-        jump.addListener('pointerup'); jump.on('pointerup',()=>this.player.jump=false);
-    }
-
-    showVictoryMessage(){
-        const text=this.add.text(this.cameras.main.scrollX+this.cameras.main.width/2,
-            this.cameras.main.scrollY+this.cameras.main.height/2,
-            '🎉 Всі серця зібрано! 🎉',{
-                fontSize:'64px',
-                fill:'#ff0',
-                fontFamily:'UnifrakturCook',
-                backgroundColor:'#000'
-            }).setOrigin(0.5).setDepth(10);
-
-        this.tweens.add({
-            targets:text,
-            alpha:{from:0,to:1},
-            duration:500,
-            yoyo:true,
-            repeat:-1
         });
     }
 
@@ -418,6 +379,21 @@ class GameScene extends Phaser.Scene {
             this.hearts.create(p.x,p.getBounds().top-30,'heart_collect')
                 .setScale(0.45).refreshBody();
         }
+    }
+
+    createMobileButtons(){
+        const left=this.add.dom(20,this.scale.height-80,'div','class=button','◀').setOrigin(0);
+        const right=this.add.dom(100,this.scale.height-80,'div','class=button','▶').setOrigin(0);
+        const jump=this.add.dom(this.scale.width-80,this.scale.height-80,'div','class=button','▲').setOrigin(0);
+
+        left.addListener('pointerdown'); left.on('pointerdown',()=>this.player.moveLeft=true);
+        left.addListener('pointerup'); left.on('pointerup',()=>this.player.moveLeft=false);
+
+        right.addListener('pointerdown'); right.on('pointerdown',()=>this.player.moveRight=true);
+        right.addListener('pointerup'); right.on('pointerup',()=>this.player.moveRight=false);
+
+        jump.addListener('pointerdown'); jump.on('pointerdown',()=>this.player.jump=true);
+        jump.addListener('pointerup'); jump.on('pointerup',()=>this.player.jump=false);
     }
 
     update(){
