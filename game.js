@@ -503,26 +503,54 @@ class GameScene extends Phaser.Scene {
 }
 
 
-
-
 /* =========================================================
    WIN / LOSE SCENES
 ========================================================= */
 class EndScene extends Phaser.Scene {
-    constructor(key,text){ super(key); this.label=text; }
+    constructor(key, text){
+        super(key);
+        this.label = text;
+    }
+
     create(data){
-        const {width,height}=this.scale;
-        document.fonts.ready.then(()=>{
-            const style={ fontFamily:'UnifrakturCook', fontSize:'56px', fill:'#e8d9b0' };
-            this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
-            this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
-            this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
-            this.add.text(width/2,height/3,this.label,{fontFamily:'UnifrakturCook', fontSize:'96px', fill:'#e8d9b0'}).setOrigin(0.5);
-            this.playBtn = this.add.text(width/2,height/2,'PLAY',style).setOrigin(0.5)
-                .setInteractive().on('pointerdown',()=>this.scene.start('GameScene',{player:data.player}));
-            this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',style).setOrigin(0.5)
-                .setInteractive().on('pointerdown',()=>this.scene.start('MenuScene'));
-            this.tweens.add({targets:[this.playBtn,this.exitBtn],scale:1.1,duration:600,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
+        const {width, height} = this.scale;
+        document.fonts.ready.then(() => {
+            const style = { fontFamily: 'UnifrakturCook', fontSize: '56px', fill: '#e8d9b0' };
+
+            // Фон
+            this.add.tileSprite(0, 0, width, height, 'bg_far').setOrigin(0);
+            this.add.tileSprite(0, 0, width, height, 'bg_mid').setOrigin(0);
+            this.add.tileSprite(0, 0, width, height, 'bg_near').setOrigin(0);
+
+            // Текст результату
+            this.add.text(width/2, height/3, this.label, {fontFamily:'UnifrakturCook', fontSize:'96px', fill:'#e8d9b0'})
+                .setOrigin(0.5);
+
+            // Текст вибору героя
+            const selectText = this.add.text(width/2, height/2 - 60, 'CHOOSE YOUR HERO', {fontFamily:'UnifrakturCook', fontSize:'48px', fill:'#e8d9b0'})
+                .setOrigin(0.5);
+
+            // Кнопки персонажів
+            const p1Btn = this.add.text(width/3, height/2 + 20, 'PLAYER 1', style).setOrigin(0.5).setInteractive();
+            const p2Btn = this.add.text(2*width/3, height/2 + 20, 'PLAYER 2', style).setOrigin(0.5).setInteractive();
+
+            p1Btn.on('pointerdown', ()=> this.scene.start('GameScene', {player:'player1'}));
+            p2Btn.on('pointerdown', ()=> this.scene.start('GameScene', {player:'player2'}));
+
+            // Кнопка виходу
+            const exitBtn = this.add.text(width/2, height/2 + 120, 'EXIT', style).setOrigin(0.5)
+                .setInteractive()
+                .on('pointerdown', ()=> this.scene.start('MenuScene'));
+
+            // Анімації для кнопок
+            this.tweens.add({
+                targets: [p1Btn, p2Btn, exitBtn],
+                scale: 1.1,
+                duration: 600,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            });
         });
     }
 }
@@ -530,14 +558,33 @@ class EndScene extends Phaser.Scene {
 class WinScene extends EndScene { constructor(){ super('WinScene','YOU WIN 🏆'); } }
 class LoseScene extends EndScene { constructor(){ super('LoseScene','GAME OVER 💀'); } }
 
+
 /* =========================================================
    CONFIG
 ========================================================= */
-new Phaser.Game({
-    type:Phaser.AUTO,
-    width:1248,
-    height:832,
-    scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
-    physics:{default:'arcade',arcade:{gravity:{y:900},debug:false}},
-    scene:[MenuScene,SelectScene,GameScene,WinScene,LoseScene]
-});
+const config = {
+    type: Phaser.AUTO,
+    width: 1248,
+    height: 832,
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+    },
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 900 },
+            debug: false
+        }
+    },
+    scene: [
+        MenuScene,      // Головне меню
+        SelectScene,    // Вибір героя (якщо є окремо)
+        GameScene,      // Основна гра
+        WinScene,       // Сцена перемоги з вибором героя
+        LoseScene       // Сцена програшу з вибором героя
+    ]
+};
+
+// Запуск гри
+new Phaser.Game(config);
