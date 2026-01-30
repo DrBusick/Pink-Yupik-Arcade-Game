@@ -16,46 +16,48 @@ if (window.Telegram && window.Telegram.WebApp) {
 ========================================================= */
 class MenuScene extends Phaser.Scene {
     constructor(){ super('MenuScene'); }
+
     preload(){
         this.load.image('bg_far','assets/backgrounds/bg_far.png');
         this.load.image('bg_mid','assets/backgrounds/bg_mid.png');
         this.load.image('bg_near','assets/backgrounds/bg_near.png');
         this.load.audio('hover','assets/sounds/hover.mp3');
+        this.load.font('gameFont','assets/fonts/UnifrakturCook-Regular.ttf');
     }
+
     create(){
         const {width,height} = this.scale;
         this.bgFar  = this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
         this.bgMid  = this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
         this.bgNear = this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
-        document.fonts.ready.then(()=>{
-            const titleStyle = { fontFamily:'gameFont', fontSize:'120px', fill:'#e8d9b0' };
-            const optionStyle = { fontFamily:'gameFont', fontSize:'56px', fill:'#e8d9b0' };
+        const titleStyle = { fontFamily:'UnifrakturCook', fontSize:'120px', fill:'#e8d9b0' };
+        const optionStyle = { fontFamily:'UnifrakturCook', fontSize:'56px', fill:'#e8d9b0' };
 
-            this.add.text(width/2,height/3,'Pink Yupik Arcade', titleStyle).setOrigin(0.5);
+        this.add.text(width/2,height/3,'Pink Yupik Arcade', titleStyle).setOrigin(0.5);
 
-            this.playBtn = this.add.text(width/2,height/2,'PLAY',optionStyle)
-                .setOrigin(0.5)
-                .setInteractive()
-                .on('pointerover',()=>this.sound.play('hover'))
-                .on('pointerdown',()=>this.scene.start('SelectScene'));
+        this.playBtn = this.add.text(width/2,height/2,'PLAY',optionStyle)
+            .setOrigin(0.5)
+            .setInteractive()
+            .on('pointerover',()=>this.sound.play('hover'))
+            .on('pointerdown',()=>this.scene.start('SelectScene'));
 
-            this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',optionStyle)
-                .setOrigin(0.5)
-                .setInteractive()
-                .on('pointerover',()=>this.sound.play('hover'))
-                .on('pointerdown',()=>window.close());
+        this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',optionStyle)
+            .setOrigin(0.5)
+            .setInteractive()
+            .on('pointerover',()=>this.sound.play('hover'))
+            .on('pointerdown',()=>window.close());
 
-            this.tweens.add({
-                targets:[this.playBtn,this.exitBtn],
-                scale:1.1,
-                duration:600,
-                yoyo:true,
-                repeat:-1,
-                ease:'Sine.easeInOut'
-            });
+        this.tweens.add({
+            targets:[this.playBtn,this.exitBtn],
+            scale:1.1,
+            duration:600,
+            yoyo:true,
+            repeat:-1,
+            ease:'Sine.easeInOut'
         });
     }
+
     update(){
         this.bgFar.tilePositionX += 0.2;
         this.bgMid.tilePositionX += 0.5;
@@ -68,47 +70,50 @@ class MenuScene extends Phaser.Scene {
 ========================================================= */
 class SelectScene extends Phaser.Scene {
     constructor(){ super('SelectScene'); }
+
     preload(){
         this.load.image('bg_far','assets/backgrounds/bg_far.png');
         this.load.image('bg_mid','assets/backgrounds/bg_mid.png');
         this.load.image('bg_near','assets/backgrounds/bg_near.png');
         this.load.image('platform','assets/platforms/platform_1.png');
         this.load.image('player1_idle','assets/player1/idle.png');
+        this.load.spritesheet('player1_walk','assets/player1/walk.png',{frameWidth:142,frameHeight:142});
         this.load.image('player2_idle','assets/player2/idle.png');
+        this.load.spritesheet('player2_walk','assets/player2/walk.png',{frameWidth:142,frameHeight:142});
         this.load.audio('hover','assets/sounds/hover.mp3');
+        this.load.font('gameFont','assets/fonts/UnifrakturCook-Regular.ttf');
     }
+
     create(){
         const {width,height} = this.scale;
         this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
         this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
         this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
-        document.fonts.ready.then(()=>{
-            const titleStyle = { fontFamily:'gameFont', fontSize:'64px', fill:'#e8d9b0' };
-            this.add.text(width/2,120,'Select Character', titleStyle).setOrigin(0.5);
+        const titleStyle = { fontFamily:'UnifrakturCook', fontSize:'64px', fill:'#e8d9b0' };
+        this.add.text(width/2,120,'Select Character', titleStyle).setOrigin(0.5);
 
-            const y = height/2 + 120;
-            this.add.image(width/2-220,y,'platform');
-            this.add.image(width/2+220,y,'platform');
+        const y = height/2 + 120;
+        this.add.image(width/2-220,y,'platform');
+        this.add.image(width/2+220,y,'platform');
 
-            const p1=this.add.image(width/2-220,y-110,'player1_idle')
-                .setInteractive()
-                .on('pointerover',()=>this.sound.play('hover'))
-                .on('pointerdown',()=>this.scene.start('GameScene',{player:'player1'}));
+        const p1=this.add.image(width/2-220,y-110,'player1_idle')
+            .setInteractive()
+            .on('pointerover',()=>this.sound.play('hover'))
+            .on('pointerdown',()=>this.scene.start('GameScene',{player:'player1'}));
 
-            const p2=this.add.image(width/2+220,y-110,'player2_idle')
-                .setInteractive()
-                .on('pointerover',()=>this.sound.play('hover'))
-                .on('pointerdown',()=>this.scene.start('GameScene',{player:'player2'}));
+        const p2=this.add.image(width/2+220,y-110,'player2_idle')
+            .setInteractive()
+            .on('pointerover',()=>this.sound.play('hover'))
+            .on('pointerdown',()=>this.scene.start('GameScene',{player:'player2'}));
 
-            this.tweens.add({
-                targets:[p1,p2],
-                scale:1.1,
-                duration:600,
-                yoyo:true,
-                repeat:-1,
-                ease:'Sine.easeInOut'
-            });
+        this.tweens.add({
+            targets:[p1,p2],
+            scale:1.1,
+            duration:600,
+            yoyo:true,
+            repeat:-1,
+            ease:'Sine.easeInOut'
         });
     }
 }
@@ -165,9 +170,6 @@ class Player extends Phaser.Physics.Arcade.Sprite {
     preUpdate(time, delta) {
         super.preUpdate(time, delta);
 
-        /* ---------------------------
-           ГОРИЗОНТАЛЬНИЙ РУХ
-        --------------------------- */
         const left =
             this.keys.left.isDown ||
             this.keys.left2.isDown ||
@@ -178,17 +180,10 @@ class Player extends Phaser.Physics.Arcade.Sprite {
             this.keys.right2.isDown ||
             this.moveRight;
 
-        if (left) {
-            this.setAccelerationX(-this.accel);
-        } else if (right) {
-            this.setAccelerationX(this.accel);
-        } else {
-            this.setAccelerationX(0);
-        }
+        if (left) this.setAccelerationX(-this.accel);
+        else if (right) this.setAccelerationX(this.accel);
+        else this.setAccelerationX(0);
 
-        /* ---------------------------
-           СТРИБОК (1 імпульс)
-        --------------------------- */
         const jumpPressed =
             Phaser.Input.Keyboard.JustDown(this.keys.up) ||
             Phaser.Input.Keyboard.JustDown(this.keys.up2) ||
@@ -201,41 +196,24 @@ class Player extends Phaser.Physics.Arcade.Sprite {
             this.scene.sound.play('jump');
         }
 
-        if (this.body.blocked.down) {
-            this.jumpCount = 0;
-        }
+        if (this.body.blocked.down) this.jumpCount = 0;
 
-        /* ---------------------------
-           НАПРЯМОК
-        --------------------------- */
         if (left) this.setFlipX(true);
         else if (right) this.setFlipX(false);
 
-        /* ---------------------------
-           АНІМАЦІЇ + ЗВУК
-        --------------------------- */
         if (Math.abs(this.body.velocity.x) > 5) {
             this.anims.play('walk', true);
 
             if (!this.walkSound) {
-                this.walkSound = this.scene.sound.add('walk', {
-                    loop: true,
-                    volume: 0.2
-                });
+                this.walkSound = this.scene.sound.add('walk', {loop:true, volume:0.2});
             }
-
-            if (!this.walkSound.isPlaying) {
-                this.walkSound.play();
-            }
+            if (!this.walkSound.isPlaying) this.walkSound.play();
         } else {
             this.anims.play('idle', true);
-            if (this.walkSound?.isPlaying) {
-                this.walkSound.stop();
-            }
+            if (this.walkSound?.isPlaying) this.walkSound.stop();
         }
     }
 }
-
 
 /* =========================================================
    ENEMY
@@ -250,74 +228,49 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.direction=Phaser.Math.Between(0,1)?1:-1;
     }
 
-   die(){
-    if (this.isDead) return;
+    die(){
+        if (this.isDead) return;
 
-    this.isDead = true;
-    this.disableBody(true, true);
+        this.isDead = true;
+        this.disableBody(true, true);
 
-    // маленьке серце після смерті
-    this.scene.time.delayedCall(50, () => {
+        // маленьке серце після смерті
+        this.scene.time.delayedCall(50, () => {
+            const h = this.scene.physics.add.image(
+                this.x,
+                this.y - 20,
+                'heart_small'
+            )
+            .setScale(0.4)
+            .setBounce(0.4)
+            .setCollideWorldBounds(true)
+            .setVelocity(Phaser.Math.Between(-80,80), -220)
+            .setAngularVelocity(Phaser.Math.Between(-180,180));
 
-        const h = this.scene.physics.add.image(
-            this.x,
-            this.y - 20,
-            'heart_small'
-        )
-        .setScale(0.4)
-        .setBounce(0.4)
-        .setCollideWorldBounds(true)
-        .setVelocity(
-            Phaser.Math.Between(-80, 80),
-            -220
-        )
-        .setAngularVelocity(
-            Phaser.Math.Between(-180, 180)
-        );
+            this.scene.physics.add.collider(h, this.scene.ground);
+            this.scene.physics.add.collider(h, this.scene.platforms);
+            this.scene.physics.add.collider(h, this.scene.movingPlatforms);
 
-        // колізії
-        this.scene.physics.add.collider(h, this.scene.ground);
-        this.scene.physics.add.collider(h, this.scene.platforms);
-        this.scene.physics.add.collider(h, this.scene.movingPlatforms);
+            this.scene.tweens.add({
+                targets: h,
+                scale: 0.45,
+                duration: 500,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            });
 
-        // пульсація
-        this.scene.tweens.add({
-            targets: h,
-            scale: 0.45,
-            duration: 500,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut'
-        });
-
-        // підбір серця (ОДИН раз)
-        this.scene.physics.add.overlap(
-            this.scene.player,
-            h,
-            () => {
+            this.scene.physics.add.overlap(this.scene.player, h, ()=>{
                 if (!h.active) return;
-
                 h.destroy();
-
-                this.scene.hp = Math.min(
-                    this.scene.hp + 1,
-                    this.scene.maxHP
-                );
-
-                const iconIndex = this.scene.hp - 1;
-                if (this.scene.hpIcons[iconIndex]) {
-                    this.scene.hpIcons[iconIndex].setAlpha(1);
-                }
-
+                this.scene.hp = Math.min(this.scene.hp+1,this.scene.maxHP);
+                const iconIndex=this.scene.hp-1;
+                if(this.scene.hpIcons[iconIndex]) this.scene.hpIcons[iconIndex].setAlpha(1);
                 this.scene.sound.play('collect');
-            },
-            null,
-            this
-        );
-
-    });
+            }, null, this);
+        });
+    }
 }
-
 
 /* =========================================================
    GAME SCENE
@@ -351,14 +304,17 @@ class GameScene extends Phaser.Scene {
         this.load.image('heart_collect','assets/items/heart_v4.png');
         this.load.image('heart_small','assets/items/heart_small.png');
 
-        this.load.image('left_btn','assets/UI/left_btn.png');
-        this.load.image('right_btn','assets/UI/right_btn.png');
-        this.load.image('jump_btn','assets/UI/jump_btn.png');
+        // кнопки
+        this.load.image('left_btn','assets/btn_left.png');
+        this.load.image('right_btn','assets/btn_right.png');
+        this.load.image('jump_btn','assets/btn_jump.png');
 
         this.load.audio('jump','assets/sounds/jump.mp3');
         this.load.audio('collect','assets/sounds/collect.mp3');
         this.load.audio('walk','assets/sounds/walk.mp3');
         this.load.audio('hover','assets/sounds/hover.mp3');
+
+        this.load.font('gameFont','assets/fonts/UnifrakturCook-Regular.ttf');
     }
 
     create(){
@@ -393,13 +349,9 @@ class GameScene extends Phaser.Scene {
         this.cameras.main.setBounds(0,0,this.worldWidth,this.worldHeight);
 
         // UI
-        document.fonts.ready.then(()=>{
-            this.hpIcons=[];
-            for(let i=0;i<this.maxHP;i++) this.hpIcons.push(this.add.image(20+i*40,100,'heart_small').setScrollFactor(0).setScale(0.3));
-            this.heartText=this.add.text(20,60,`?? 0 / ${this.totalHearts}`,{
-                fontSize:'32px',fill:'#e8d9b0', fontFamily:'gameFont'
-            }).setScrollFactor(0);
-        });
+        this.hpIcons=[];
+        for(let i=0;i<this.maxHP;i++) this.hpIcons.push(this.add.image(20+i*40,100,'heart_small').setScrollFactor(0).setScale(0.3));
+        this.heartText=this.add.text(20,60,`❤️ 0 / ${this.totalHearts}`,{fontSize:'32px',fill:'#e8d9b0', fontFamily:'UnifrakturCook'}).setScrollFactor(0);
 
         // HEARTS
         this.hearts = this.physics.add.staticGroup();
@@ -408,13 +360,11 @@ class GameScene extends Phaser.Scene {
             h.destroy();
             this.heartsCollected++;
             this.sound.play('collect');
-            this.heartText.setText(`?? ${this.heartsCollected} / ${this.totalHearts}`);
-            if(this.heartsCollected>=this.totalHearts){
-                this.showWinText();
-            }
+            this.heartText.setText(`❤️ ${this.heartsCollected} / ${this.totalHearts}`);
+            if(this.heartsCollected>=this.totalHearts) this.showWinText();
         });
 
-        // ENEMIES (5)
+        // ENEMIES
         this.enemies = this.physics.add.group();
         for(let i=0;i<5;i++){
             const x=800+i*900;
@@ -424,74 +374,45 @@ class GameScene extends Phaser.Scene {
         this.physics.add.collider(this.enemies,this.ground);
         this.physics.add.collider(this.enemies,this.platforms);
 
-        // КОЛАЙДЕР ГРАВЕЦЬ ? ВОРОГ
         this.physics.add.collider(this.player, this.enemies, (p, e) => {
+            if (e.isDead) return;
+            const stompMargin=40;
+            const playerBottom=p.body.bottom;
+            const enemyTop=e.body.top;
+            const playerCenterX=p.body.center.x;
+            const enemyCenterX=e.body.center.x;
+            const enemyHalfWidth=e.body.width*0.35;
+            const isAbove = playerBottom <= enemyTop+stompMargin && p.body.velocity.y>0;
+            const isCentered = Math.abs(playerCenterX-enemyCenterX)<=enemyHalfWidth;
+            if(isAbove && isCentered){ e.die(); p.setVelocityY(-350); }
+            else this.damage();
+        });
 
-    if (e.isDead) return;
-
-    const stompMargin = 40;
-
-    const playerBottom = p.body.bottom;
-    const enemyTop = e.body.top;
-
-    const playerCenterX = p.body.center.x;
-    const enemyCenterX  = e.body.center.x;
-
-    const enemyHalfWidth = e.body.width * 0.35; // зона "голови"
-
-    const isAbove =
-        playerBottom <= enemyTop + stompMargin &&
-        p.body.velocity.y > 0;
-
-    const isCentered =
-        Math.abs(playerCenterX - enemyCenterX) <= enemyHalfWidth;
-
-    if (isAbove && isCentered) {
-
-        // ? чистий стомп
-        e.die();
-        p.setVelocityY(-350);
-
-    } else {
-        // ? боковий контакт
-        this.damage();
-    }
-});
-
-
-        if(this.sys.game.device.os.android || this.sys.game.device.os.iOS){
-            this.createMobileButtons();
-        }
+        if(this.sys.game.device.os.android || this.sys.game.device.os.iOS) this.createMobileButtons();
     }
 
     update(){
         this.bg.tilePositionX=this.cameras.main.scrollX*0.3;
 
-        // ENEMIES: патрулювання всього рівня
+        // ENEMIES: патрулювання
         this.enemies.getChildren().forEach(e=>{
             if(e.isDead) return;
-            const p = this.player;
-            const dist = Phaser.Math.Distance.Between(e.x,e.y,p.x,p.y);
-
-            let targetDir = e.direction;
-            if(dist < 450) targetDir = p.x < e.x ? -1 : 1;
-
-            // межі рівня
-            if(e.x + targetDir * e.speed * this.game.loop.delta/1000 <= 0 ||
-               e.x + targetDir * e.speed * this.game.loop.delta/1000 >= this.worldWidth){
-                e.direction *= -1;
-                targetDir = e.direction;
+            const p=this.player;
+            const dist=Phaser.Math.Distance.Between(e.x,e.y,p.x,p.y);
+            let targetDir=e.direction;
+            if(dist<450) targetDir=p.x<e.x?-1:1;
+            if(e.x+targetDir*e.speed*this.game.loop.delta/1000<=0||e.x+targetDir*e.speed*this.game.loop.delta/1000>=this.worldWidth){
+                e.direction*=-1; targetDir=e.direction;
             }
-
-            e.setVelocityX(targetDir * e.speed);
-            e.setFlipX(targetDir < 0);
+            e.setVelocityX(targetDir*e.speed);
+            e.setFlipX(targetDir<0);
             if(Math.abs(e.body.velocity.x)>5) e.anims.play(`${e.type}_walk`,true);
             else e.anims.play(`${e.type}_idle`,true);
         });
 
         // рухомі платформи
         this.movingPlatformsList.forEach(pf=>{
-            pf.y += pf.speed * pf.direction * this.game.loop.delta/1000;
+            pf.y += pf.speed*pf.direction*this.game.loop.delta/1000;
             if(pf.y<260 || pf.y>480) pf.direction*=-1;
         });
     }
@@ -509,119 +430,4 @@ class GameScene extends Phaser.Scene {
             const y=Phaser.Math.Between(260,380);
             let isMoving=!lastWasMoving && Phaser.Math.Between(0,3)<1;
             lastWasMoving=isMoving;
-
-            const pf = isMoving ? this.movingPlatforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`) :
-                                  this.platforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`);
-            pf.refreshBody();
-
-            if(isMoving){
-                pf.isMoving=true; pf.speed=Phaser.Math.Between(30,70); pf.direction=1;
-                this.movingPlatformsList.push(pf);
-            }
-            x+=Phaser.Math.Between(280,340);
-        }
-    }
-
-    spawnHearts(count){
-        const plats=this.platforms.getChildren().concat(this.movingPlatformsList);
-        for(let i=0;i<count;i++){
-            let x,y,overlap;
-            do{
-                x=Phaser.Math.Between(50,this.worldWidth-50);
-                y=Phaser.Math.Between(50,this.worldHeight-200);
-                overlap = plats.some(pl=>{
-                    const b=pl.getBounds();
-                    return x>b.left-20 && x<b.right+20 && y>b.top-20 && y<b.bottom+20;
-                }) || this.hearts.getChildren().some(h=>Math.abs(h.x-x)<40 && Math.abs(h.y-y)<40);
-            } while(overlap);
-
-            const heart=this.hearts.create(x,y,'heart_collect').setScale(0.45).refreshBody();
-            this.tweens.add({targets:heart,scale:0.5,duration:800,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
-        }
-    }
-
-    showWinText(){
-        this.scene.start('WinScene',{player:this.selectedPlayer});
-    }
-
-   createMobileButtons(){
-
-    const y = this.scale.height - 80;
-
-    const left = this.add.image(60, y, 'left_btn')
-        .setInteractive()
-        .setScrollFactor(0);
-
-    const right = this.add.image(160, y, 'right_btn')
-        .setInteractive()
-        .setScrollFactor(0);
-
-    const jump = this.add.image(this.scale.width - 80, y, 'jump_btn')
-        .setInteractive()
-        .setScrollFactor(0);
-
-    [left, right, jump].forEach(btn => {
-        this.tweens.add({
-            targets: btn,
-            scale: 1.1,
-            duration: 600,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut'
-        });
-    });
-
-    // ?
-    left.on('pointerdown', () => this.player.moveLeft = true);
-    left.on('pointerup', () => this.player.moveLeft = false);
-    left.on('pointerout', () => this.player.moveLeft = false);
-
-    // ?
-    right.on('pointerdown', () => this.player.moveRight = true);
-    right.on('pointerup', () => this.player.moveRight = false);
-    right.on('pointerout', () => this.player.moveRight = false);
-
-    // ? стрибок — лише ЗАПИТ
-    jump.on('pointerdown', () => {
-        this.player.jumpRequest = true;
-    });
-}
-
-
-
-/* =========================================================
-   WIN / LOSE SCENES
-========================================================= */
-class EndScene extends Phaser.Scene {
-    constructor(key,text){ super(key); this.label=text; }
-    create(data){
-        const {width,height}=this.scale;
-        document.fonts.ready.then(()=>{
-            const style={ fontFamily:'UnifrakturCook', fontSize:'56px', fill:'#e8d9b0' };
-            this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
-            this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
-            this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
-            this.add.text(width/2,height/3,this.label,{fontFamily:'UnifrakturCook', fontSize:'96px', fill:'#e8d9b0'}).setOrigin(0.5);
-            this.playBtn = this.add.text(width/2,height/2,'PLAY',style).setOrigin(0.5)
-                .setInteractive().on('pointerdown',()=>this.scene.start('GameScene',{player:data.player}));
-            this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',style).setOrigin(0.5)
-                .setInteractive().on('pointerdown',()=>this.scene.start('MenuScene'));
-            this.tweens.add({targets:[this.playBtn,this.exitBtn],scale:1.1,duration:600,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
-        });
-    }
-}
-
-class WinScene extends EndScene { constructor(){ super('WinScene','YOU WIN ??'); } }
-class LoseScene extends EndScene { constructor(){ super('LoseScene','GAME OVER ??'); } }
-
-/* =========================================================
-   CONFIG
-========================================================= */
-new Phaser.Game({
-    type:Phaser.AUTO,
-    width:1248,
-    height:832,
-    scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
-    physics:{default:'arcade',arcade:{gravity:{y:900},debug:false}},
-    scene:[MenuScene,SelectScene,GameScene,WinScene,LoseScene]
-});
+            const pf = isMoving ? this.movingPlatforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`)
