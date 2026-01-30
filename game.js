@@ -44,7 +44,7 @@ class MenuScene extends Phaser.Scene {
                 .setOrigin(0.5)
                 .setInteractive()
                 .on('pointerover',()=>this.sound.play('hover'))
-                .on('pointerdown',()=>window.Telegram?.WebApp?.close());
+                .on('pointerdown',()=>window.close());
 
             this.tweens.add({
                 targets:[this.playBtn,this.exitBtn],
@@ -117,55 +117,125 @@ class SelectScene extends Phaser.Scene {
    PLAYER
 ========================================================= */
 class Player extends Phaser.Physics.Arcade.Sprite {
-    constructor(scene,x,y,key){
-        super(scene,x,y,key);
+
+    constructor(scene, x, y, key) {
+        super(scene, x, y, key);
+
         scene.add.existing(this);
         scene.physics.add.existing(this);
-        this.setCollideWorldBounds(true).setBodySize(90,120).setOffset(26,18);
 
-        this.speed=180; this.accel=900; this.jumpVelocity=520;
-        this.jumpCount=0; this.maxJumps=3;
-        this.body.setDragX(1200).setMaxVelocity(this.speed,1000);
+        this.scene = scene;
 
-        this.keys=scene.input.keyboard.addKeys({
-            left:'A', right:'D', up:'W',
-            left2:'LEFT', right2:'RIGHT', up2:'UP'
+        // ФІЗИКА
+        this.setCollideWorldBounds(true);
+        this.setBodySize(90, 120);
+        this.setOffset(26, 18);
+
+        // РУХ
+        this.speed = 180;
+        this.accel = 900;
+        this.jumpVelocity = 520;
+
+        // СТРИБКИ
+        this.jumpCount = 0;
+        this.maxJumps = 3;
+        this.jumpRequest = false;
+
+        this.body.setDragX(1200);
+        this.body.setMaxVelocity(this.speed, 1000);
+
+        // КЛАВІАТУРА
+        this.keys = scene.input.keyboard.addKeys({
+            left: 'A',
+            right: 'D',
+            up: 'W',
+            left2: 'LEFT',
+            right2: 'RIGHT',
+            up2: 'UP'
         });
-        this.moveLeft=false; this.moveRight=false; this.jump=false;
-        this.scene=scene;
+
+        // МОБІЛЬНЕ КЕРУВАННЯ
+        this.moveLeft = false;
+        this.moveRight = false;
+
+        // ЗВУК
+        this.walkSound = null;
     }
 
-    preUpdate(t,d){
-        super.preUpdate(t,d);
+    preUpdate(time, delta) {
+        super.preUpdate(time, delta);
 
-        const l=this.keys.left.isDown||this.keys.left2.isDown||this.moveLeft;
-        const r=this.keys.right.isDown||this.keys.right2.isDown||this.moveRight;
+        /* ---------------------------
+           ГОРИЗОНТАЛЬНИЙ РУХ
+        --------------------------- */
+        const left =
+            this.keys.left.isDown ||
+            this.keys.left2.isDown ||
+            this.moveLeft;
 
-        if(l) this.setAccelerationX(-this.accel);
-        else if(r) this.setAccelerationX(this.accel);
-        else this.setAccelerationX(0);
+        const right =
+            this.keys.right.isDown ||
+            this.keys.right2.isDown ||
+            this.moveRight;
 
-        if(((Phaser.Input.Keyboard.JustDown(this.keys.up)||Phaser.Input.Keyboard.JustDown(this.keys.up2))||this.jump)
-           && this.jumpCount<this.maxJumps){
+        if (left) {
+            this.setAccelerationX(-this.accel);
+        } else if (right) {
+            this.setAccelerationX(this.accel);
+        } else {
+            this.setAccelerationX(0);
+        }
+
+        /* ---------------------------
+           СТРИБОК (1 імпульс)
+        --------------------------- */
+        const jumpPressed =
+            Phaser.Input.Keyboard.JustDown(this.keys.up) ||
+            Phaser.Input.Keyboard.JustDown(this.keys.up2) ||
+            this.jumpRequest;
+
+        if (jumpPressed && this.jumpCount < this.maxJumps) {
             this.setVelocityY(-this.jumpVelocity);
             this.jumpCount++;
+            this.jumpRequest = false;
             this.scene.sound.play('jump');
         }
 
-        if(this.body.blocked.down) this.jumpCount=0;
-        if(l) this.setFlipX(true);
-        else if(r) this.setFlipX(false);
+        if (this.body.blocked.down) {
+            this.jumpCount = 0;
+        }
 
-        if(Math.abs(this.body.velocity.x)>5){
-            this.anims.play('walk',true);
-            if(!this.walkSound) this.walkSound=this.scene.sound.add('walk',{loop:true,volume:0.2});
-            if(!this.walkSound.isPlaying) this.walkSound.play();
+        /* ---------------------------
+           НАПРЯМОК
+        --------------------------- */
+        if (left) this.setFlipX(true);
+        else if (right) this.setFlipX(false);
+
+        /* ---------------------------
+           АНІМАЦІЇ + ЗВУК
+        --------------------------- */
+        if (Math.abs(this.body.velocity.x) > 5) {
+            this.anims.play('walk', true);
+
+            if (!this.walkSound) {
+                this.walkSound = this.scene.sound.add('walk', {
+                    loop: true,
+                    volume: 0.2
+                });
+            }
+
+            if (!this.walkSound.isPlaying) {
+                this.walkSound.play();
+            }
         } else {
-            this.anims.play('idle',true);
-            if(this.walkSound?.isPlaying) this.walkSound.stop();
+            this.anims.play('idle', true);
+            if (this.walkSound?.isPlaying) {
+                this.walkSound.stop();
+            }
         }
     }
 }
+
 
 /* =========================================================
    ENEMY
@@ -180,42 +250,74 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.direction=Phaser.Math.Between(0,1)?1:-1;
     }
 
-    die(){
-        if(this.isDead) return;
-        this.isDead=true;
-        this.disableBody(true,true);
+   die(){
+    if (this.isDead) return;
 
-        // маленьке серце після смерті
-        this.scene.time.delayedCall(50, ()=>{
-            const h = this.scene.physics.add.image(this.x,this.y-20,'heart_small')
-                .setScale(0.4)
-                .setBounce(0.4)
-                .setCollideWorldBounds(true)
-                .setVelocity(Phaser.Math.Between(-80,80), -220)
-                .setAngularVelocity(Phaser.Math.Between(-180,180));
+    this.isDead = true;
+    this.disableBody(true, true);
 
-            this.scene.physics.add.collider(h,this.scene.ground);
-            this.scene.physics.add.collider(h,this.scene.platforms);
-            this.scene.physics.add.collider(h,this.scene.movingPlatforms);
+    // маленьке серце після смерті
+    this.scene.time.delayedCall(50, () => {
 
-            this.scene.tweens.add({
-                targets: h,
-                scale: 0.45,
-                duration: 500,
-                yoyo: true,
-                repeat: -1,
-                ease: 'Sine.easeInOut'
-            });
+        const h = this.scene.physics.add.image(
+            this.x,
+            this.y - 20,
+            'heart_small'
+        )
+        .setScale(0.4)
+        .setBounce(0.4)
+        .setCollideWorldBounds(true)
+        .setVelocity(
+            Phaser.Math.Between(-80, 80),
+            -220
+        )
+        .setAngularVelocity(
+            Phaser.Math.Between(-180, 180)
+        );
 
-            this.scene.physics.add.overlap(this.scene.player,h,()=>{
-                h.destroy();
-                this.scene.hp = Math.min(this.scene.hp+1,this.scene.maxHP);
-                this.scene.hpIcons[this.scene.hp-1].setAlpha(1);
-                this.scene.sound.play('collect');
-            });
+        // колізії
+        this.scene.physics.add.collider(h, this.scene.ground);
+        this.scene.physics.add.collider(h, this.scene.platforms);
+        this.scene.physics.add.collider(h, this.scene.movingPlatforms);
+
+        // пульсація
+        this.scene.tweens.add({
+            targets: h,
+            scale: 0.45,
+            duration: 500,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
         });
-    }
+
+        // підбір серця (ОДИН раз)
+        this.scene.physics.add.overlap(
+            this.scene.player,
+            h,
+            () => {
+                if (!h.active) return;
+
+                h.destroy();
+
+                this.scene.hp = Math.min(
+                    this.scene.hp + 1,
+                    this.scene.maxHP
+                );
+
+                const iconIndex = this.scene.hp - 1;
+                if (this.scene.hpIcons[iconIndex]) {
+                    this.scene.hpIcons[iconIndex].setAlpha(1);
+                }
+
+                this.scene.sound.play('collect');
+            },
+            null,
+            this
+        );
+
+    });
 }
+
 
 /* =========================================================
    GAME SCENE
@@ -323,20 +425,39 @@ class GameScene extends Phaser.Scene {
         this.physics.add.collider(this.enemies,this.platforms);
 
         // КОЛАЙДЕР ГРАВЕЦЬ ↔ ВОРОГ
-        this.physics.add.collider(this.player,this.enemies,(p,e)=>{
-            if(e.isDead) return;
+        this.physics.add.collider(this.player, this.enemies, (p, e) => {
 
-            const playerBottom = p.body.bottom;
-            const enemyTop = e.body.top;
+    if (e.isDead) return;
 
-            // Смерть ворога, якщо верх ворога контактує з низом гравця +30
-            if (p.body.velocity.y > 0 && enemyTop <= playerBottom + 30) { 
-                e.die();
-                p.setVelocityY(-350);
-            } else {
-                this.damage();
-            }
-        });
+    const stompMargin = 40;
+
+    const playerBottom = p.body.bottom;
+    const enemyTop = e.body.top;
+
+    const playerCenterX = p.body.center.x;
+    const enemyCenterX  = e.body.center.x;
+
+    const enemyHalfWidth = e.body.width * 0.35; // зона "голови"
+
+    const isAbove =
+        playerBottom <= enemyTop + stompMargin &&
+        p.body.velocity.y > 0;
+
+    const isCentered =
+        Math.abs(playerCenterX - enemyCenterX) <= enemyHalfWidth;
+
+    if (isAbove && isCentered) {
+
+        // ✔ чистий стомп
+        e.die();
+        p.setVelocityY(-350);
+
+    } else {
+        // ❌ боковий контакт
+        this.damage();
+    }
+});
+
 
         if(this.sys.game.device.os.android || this.sys.game.device.os.iOS){
             this.createMobileButtons();
@@ -423,21 +544,50 @@ class GameScene extends Phaser.Scene {
         this.scene.start('WinScene',{player:this.selectedPlayer});
     }
 
-    createMobileButtons(){
-        const left=this.add.image(60,this.scale.height-80,'left_btn').setInteractive().setScrollFactor(0);
-        const right=this.add.image(160,this.scale.height-80,'right_btn').setInteractive().setScrollFactor(0);
-        const jump=this.add.image(this.scale.width-80,this.scale.height-80,'jump_btn').setInteractive().setScrollFactor(0);
+   createMobileButtons(){
 
-        [left,right,jump].forEach(btn=>this.tweens.add({targets:btn,scale:1.1,duration:600,yoyo:true,repeat:-1,ease:'Sine.easeInOut'}));
+    const y = this.scale.height - 80;
 
-        left.on('pointerdown',()=>this.player.moveLeft=true);
-        left.on('pointerup',()=>this.player.moveLeft=false);
-        right.on('pointerdown',()=>this.player.moveRight=true);
-        right.on('pointerup',()=>this.player.moveRight=false);
-        jump.on('pointerdown',()=>this.player.jump=true);
-        jump.on('pointerup',()=>this.player.jump=false);
-    }
+    const left = this.add.image(60, y, 'left_btn')
+        .setInteractive()
+        .setScrollFactor(0);
+
+    const right = this.add.image(160, y, 'right_btn')
+        .setInteractive()
+        .setScrollFactor(0);
+
+    const jump = this.add.image(this.scale.width - 80, y, 'jump_btn')
+        .setInteractive()
+        .setScrollFactor(0);
+
+    [left, right, jump].forEach(btn => {
+        this.tweens.add({
+            targets: btn,
+            scale: 1.1,
+            duration: 600,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+    });
+
+    // ←
+    left.on('pointerdown', () => this.player.moveLeft = true);
+    left.on('pointerup', () => this.player.moveLeft = false);
+    left.on('pointerout', () => this.player.moveLeft = false);
+
+    // →
+    right.on('pointerdown', () => this.player.moveRight = true);
+    right.on('pointerup', () => this.player.moveRight = false);
+    right.on('pointerout', () => this.player.moveRight = false);
+
+    // ⬆ стрибок — лише ЗАПИТ
+    jump.on('pointerdown', () => {
+        this.player.jumpRequest = true;
+    });
 }
+
+
 
 /* =========================================================
    WIN / LOSE SCENES
