@@ -431,3 +431,64 @@ class GameScene extends Phaser.Scene {
             let isMoving=!lastWasMoving && Phaser.Math.Between(0,3)<1;
             lastWasMoving=isMoving;
             const pf = isMoving ? this.movingPlatforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`)
+this.platforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`);
+            pf.refreshBody();
+
+            if(isMoving){ pf.isMoving=true; pf.speed=Phaser.Math.Between(30,70); pf.direction=1; this.movingPlatformsList.push(pf); }
+            x+=Phaser.Math.Between(280,340);
+        }
+    }
+
+    spawnHearts(count){
+        let x=600;
+        for(let i=0;i<count;i++){
+            const y=Phaser.Math.Between(200,550);
+            this.hearts.create(x,y,'heart_collect').setScale(0.5).refreshBody();
+            x+=Phaser.Math.Between(250,350);
+        }
+    }
+
+    createMobileButtons(){
+        const w=this.scale.width,h=this.scale.height;
+        this.leftBtn=this.add.image(80,h-80,'left_btn').setScrollFactor(0).setInteractive();
+        this.rightBtn=this.add.image(180,h-80,'right_btn').setScrollFactor(0).setInteractive();
+        this.jumpBtn=this.add.image(w-120,h-80,'jump_btn').setScrollFactor(0).setInteractive();
+
+        this.leftBtn.on('pointerdown',()=>this.player.moveLeft=true).on('pointerup',()=>this.player.moveLeft=false);
+        this.rightBtn.on('pointerdown',()=>this.player.moveRight=true).on('pointerup',()=>this.player.moveRight=false);
+        this.jumpBtn.on('pointerdown',()=>this.player.jumpRequest=true);
+    }
+
+    showWinText(){
+        this.scene.start('WinScene',{player:this.selectedPlayer});
+    }
+}
+
+/* =========================================================
+   WIN / LOSE SCENES
+========================================================= */
+class EndScene extends Phaser.Scene {
+    constructor(key,text){super(key);this.text=text;}
+    init(data){this.player=data.player;}
+    create(){
+        const {width,height} = this.scale;
+        const style={ fontFamily:'gameFont', fontSize:'64px', fill:'#e8d9b0', align:'center' };
+        this.add.text(width/2,height/2,this.text,style).setOrigin(0.5);
+        const btn=this.add.text(width/2,height/2+120,'RESTART',{fontFamily:'gameFont',fontSize:'48px',fill:'#e8d9b0'})
+            .setOrigin(0.5).setInteractive().on('pointerdown',()=>this.scene.start('MenuScene'));
+    }
+}
+class WinScene extends EndScene{ constructor(){super('WinScene','YOU WIN 🎉');} }
+class LoseScene extends EndScene{ constructor(){super('LoseScene','GAME OVER 💀');} }
+
+/* =========================================================
+   CONFIG
+========================================================= */
+new Phaser.Game({
+    type:Phaser.AUTO,
+    width:1248,
+    height:832,
+    scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
+    physics:{default:'arcade',arcade:{gravity:{y:900},debug:false}},
+    scene:[MenuScene,SelectScene,GameScene,WinScene,LoseScene]
+});
