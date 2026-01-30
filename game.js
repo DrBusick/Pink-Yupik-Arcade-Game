@@ -325,8 +325,12 @@ class GameScene extends Phaser.Scene {
         // КОЛАЙДЕР ГРАВЕЦЬ ↔ ВОРОГ
         this.physics.add.collider(this.player,this.enemies,(p,e)=>{
             if(e.isDead) return;
-            const isFallingOnTop = p.body.velocity.y > 0 && (p.y + p.body.height/2) < (e.y - e.body.height/4);
-            if(isFallingOnTop){
+
+            const playerBottom = p.body.bottom;
+            const enemyTop = e.body.top;
+
+            // Смерть ворога, якщо верх ворога контактує з низом гравця +30
+            if (p.body.velocity.y > 0 && enemyTop <= playerBottom + 30) { 
                 e.die();
                 p.setVelocityY(-350);
             } else {
