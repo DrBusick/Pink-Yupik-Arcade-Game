@@ -246,156 +246,171 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
 class GameScene extends Phaser.Scene {
     constructor(){
         super('GameScene');
-        this.worldWidth=6000; this.worldHeight=832;
-        this.maxHP=3; this.hp=3;
-        this.totalHearts=25; this.heartsCollected=0;
-        this.movingPlatformsList=[];
+        this.worldWidth = 6000;
+        this.worldHeight = 832;
+        this.maxHP = 3;
+        this.hp = 3;
+        this.totalHearts = 25;
+        this.heartsCollected = 0;
+        this.movingPlatformsList = [];
     }
 
     init(data){
-        this.selectedPlayer=data.player;
-        this.enemyType=this.selectedPlayer==='player1'?'player2':'player1';
-        this.heartsCollected=0; this.hp=this.maxHP;
+        this.selectedPlayer = data.player;
+        this.enemyType = this.selectedPlayer === 'player1' ? 'player2' : 'player1';
+        this.heartsCollected = 0;
+        this.hp = this.maxHP;
     }
 
     preload(){
-        const p=this.selectedPlayer,e=this.enemyType;
-        this.load.image(`${p}_idle`,`assets/${p}/idle.png`);
-        this.load.spritesheet(`${p}_walk`,`assets/${p}/walk.png`,{frameWidth:142,frameHeight:142});
-        this.load.image(`${e}_idle`,`assets/${e}/idle.png`);
-        this.load.spritesheet(`${e}_walk`,`assets/${e}/walk.png`,{frameWidth:142,frameHeight:142});
+        const p = this.selectedPlayer;
+        const e = this.enemyType;
 
-        this.load.image('bg','assets/backgrounds/bg.png');
-        this.load.image('ground','assets/platforms/ground.png');
-        for(let i=1;i<=4;i++) this.load.image(`pf${i}`,'assets/platforms/platform_'+i+'.png');
+        // Гравець
+        this.load.image(`${p}_idle`, `assets/${p}/idle.png`);
+        this.load.spritesheet(`${p}_walk`, `assets/${p}/walk.png`, { frameWidth: 142, frameHeight: 142 });
 
-        this.load.image('heart_collect','assets/items/heart_v4.png');
-        this.load.image('heart_small','assets/items/heart_small.png');
+        // Ворог
+        this.load.image(`${e}_idle`, `assets/${e}/idle.png`);
+        this.load.spritesheet(`${e}_walk`, `assets/${e}/walk.png`, { frameWidth: 142, frameHeight: 142 });
 
+        // Фон, платформи, предмети
+        this.load.image('bg', 'assets/backgrounds/bg.png');
+        this.load.image('ground', 'assets/platforms/ground.png');
+        for (let i = 1; i <= 4; i++) this.load.image(`pf${i}`, `assets/platforms/platform_${i}.png`);
+        this.load.image('heart_collect', 'assets/items/heart_v4.png');
+        this.load.image('heart_small', 'assets/items/heart_small.png');
+
+        // UI кнопки
         this.load.image('left_btn','assets/UI/left_btn.png');
         this.load.image('right_btn','assets/UI/right_btn.png');
         this.load.image('jump_btn','assets/UI/jump_btn.png');
 
+        // Звуки
         this.load.audio('jump','assets/sounds/jump.mp3');
         this.load.audio('collect','assets/sounds/collect.mp3');
         this.load.audio('walk','assets/sounds/walk.mp3');
         this.load.audio('hover','assets/sounds/hover.mp3');
     }
 
-    create(){
-        const {width,height} = this.scale;
+    create() {
         const p = this.selectedPlayer;
         const e = this.enemyType;
-        const s = this.enemySuffix;
 
-        this.anims.create({key:'idle',frames:[{key:`${p}_idle`}],repeat:-1});
-        this.anims.create({key:'walk',frames:this.anims.generateFrameNumbers(`${p}_walk`),frameRate:10,repeat:-1});
+        // --- Анімації ---
+        this.anims.create({ key: 'idle', frames: [{ key: `${p}_idle` }], repeat: -1 });
+        this.anims.create({ key: 'walk', frames: this.anims.generateFrameNumbers(`${p}_walk`), frameRate: 10, repeat: -1 });
 
-        this.anims.create({key:`${e}_idle`,frames:[{key:`${e}_idle_${s}`}],repeat:-1});
-        this.anims.create({key:`${e}_walk`,frames:this.anims.generateFrameNumbers(`${e}_walk_${s}`),frameRate:10,repeat:-1});
+        this.anims.create({ key: `${e}_idle`, frames: [{ key: `${e}_idle` }], repeat: -1 });
+        this.anims.create({ key: `${e}_walk`, frames: this.anims.generateFrameNumbers(`${e}_walk`), frameRate: 10, repeat: -1 });
 
-        this.physics.world.setBounds(0,0,this.worldWidth,this.worldHeight);
-        this.bg = this.add.tileSprite(0,0,this.worldWidth,832,'bg').setOrigin(0);
+        // --- Фон ---
+        this.physics.world.setBounds(0, 0, this.worldWidth, this.worldHeight);
+        this.bg = this.add.tileSprite(0, 0, this.worldWidth, 832, 'bg').setOrigin(0);
 
-        // GROUND
+        // --- Грунт ---
         this.ground = this.physics.add.staticGroup();
         const gW = this.textures.get('ground').getSourceImage().width;
-        for(let i=0;i<this.worldWidth/gW;i++)
-            this.ground.create(i*gW+gW/2,this.worldHeight,'ground').setOrigin(0.5,1).refreshBody();
+        for (let i = 0; i < this.worldWidth / gW; i++)
+            this.ground.create(i * gW + gW / 2, this.worldHeight, 'ground').setOrigin(0.5, 1).refreshBody();
 
-        // PLATFORMS
+        // --- Платформи ---
         this.platforms = this.physics.add.staticGroup();
-        this.movingPlatforms = this.physics.add.group({allowGravity:false,immovable:true});
+        this.movingPlatforms = this.physics.add.group({ allowGravity: false, immovable: true });
         this.spawnPlatforms();
 
-        // PLAYER
-        this.player = new Player(this,200,620,`${p}_idle`);
-        this.physics.add.collider(this.player,this.ground);
-        this.physics.add.collider(this.player,this.platforms);
-        this.physics.add.collider(this.player,this.movingPlatforms);
+        // --- Гравець ---
+        this.player = new Player(this, 200, 620, `${p}_idle`);
+        this.physics.add.collider(this.player, this.ground);
+        this.physics.add.collider(this.player, this.platforms);
+        this.physics.add.collider(this.player, this.movingPlatforms);
 
-        // CAMERA
-        this.cameras.main.startFollow(this.player,true,0.12,0.12);
-        this.cameras.main.setBounds(0,0,this.worldWidth,this.worldHeight);
+        // --- Камера ---
+        this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+        this.cameras.main.setBounds(0, 0, this.worldWidth, this.worldHeight);
 
-        // UI
+        // --- UI ---
         this.setupUI();
 
-        // HEARTS
+        // --- Серця ---
         this.setupHearts();
 
-        // ENEMIES
+        // --- Вороги ---
         this.setupEnemies();
 
-        // PLAYER ↔ ENEMY
+        // --- Колізії гравець ↔ ворог ---
         this.setupPlayerEnemyCollision();
 
-        if(this.sys.game.device.os.android || this.sys.game.device.os.iOS) this.createMobileButtons();
+        // --- Мобільні кнопки ---
+        if (this.sys.game.device.os.android || this.sys.game.device.os.iOS) this.createMobileButtons();
     }
 
     update(){
-        this.bg.tilePositionX=this.cameras.main.scrollX*0.3;
+        this.bg.tilePositionX = this.cameras.main.scrollX * 0.3;
 
-        this.enemies.getChildren().forEach(e=>{
-            if(e.isDead) return;
+        // Вороги
+        this.enemies.getChildren().forEach(e => {
+            if (e.isDead) return;
             const p = this.player;
-            const dist = Phaser.Math.Distance.Between(e.x,e.y,p.x,p.y);
+            const dist = Phaser.Math.Distance.Between(e.x, e.y, p.x, p.y);
 
             let targetDir = e.direction;
             if(dist < 450) targetDir = p.x < e.x ? -1 : 1;
 
-            if(e.x + targetDir * e.speed * this.game.loop.delta/1000 <= 0 ||
-               e.x + targetDir * e.speed * this.game.loop.delta/1000 >= this.worldWidth){
+            if(e.x + targetDir * e.speed * this.game.loop.delta / 1000 <= 0 ||
+               e.x + targetDir * e.speed * this.game.loop.delta / 1000 >= this.worldWidth){
                 e.direction *= -1;
                 targetDir = e.direction;
             }
 
             e.setVelocityX(targetDir * e.speed);
             e.setFlipX(targetDir < 0);
-            if(Math.abs(e.body.velocity.x)>5) e.anims.play(`${e.type}_walk`,true);
-            else e.anims.play(`${e.type}_idle`,true);
+            if(Math.abs(e.body.velocity.x) > 5) e.anims.play(`${e.type}_walk`, true);
+            else e.anims.play(`${e.type}_idle`, true);
         });
 
-        this.movingPlatformsList.forEach(pf=>{
-            pf.y += pf.speed * pf.direction * this.game.loop.delta/1000;
-            if(pf.y<260 || pf.y>480) pf.direction*=-1;
+        // Рух платформ
+        this.movingPlatformsList.forEach(pf => {
+            pf.y += pf.speed * pf.direction * this.game.loop.delta / 1000;
+            if(pf.y < 260 || pf.y > 480) pf.direction *= -1;
         });
     }
 
     damage(){
         this.hp--;
-        if(this.hp<0) this.hp=0;
+        if(this.hp < 0) this.hp = 0;
         this.hpIcons[this.hp]?.setAlpha(0);
-        if(this.hp<=0) this.scene.start('LoseScene',{player:this.selectedPlayer});
+        if(this.hp <= 0) this.scene.start('LoseScene', { player: this.selectedPlayer });
     }
 
     spawnPlatforms(){
-        let x=500,lastWasMoving=false;
-        for(let i=0;i<20;i++){
-            const y=Phaser.Math.Between(260,380);
-            let isMoving=!lastWasMoving && Phaser.Math.Between(0,3)<1;
-            lastWasMoving=isMoving;
+        let x = 500, lastWasMoving = false;
+        for(let i = 0; i < 20; i++){
+            const y = Phaser.Math.Between(260, 380);
+            let isMoving = !lastWasMoving && Phaser.Math.Between(0, 3) < 1;
+            lastWasMoving = isMoving;
 
-            const pf = isMoving ? this.movingPlatforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`) :
-                                  this.platforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`);
+            const pf = isMoving ?
+                this.movingPlatforms.create(x, y, `pf${Phaser.Math.Between(1,4)}`) :
+                this.platforms.create(x, y, `pf${Phaser.Math.Between(1,4)}`);
             pf.refreshBody();
 
             if(isMoving){
                 pf.isMoving = true;
-                pf.speed = Phaser.Math.Between(30,70);
+                pf.speed = Phaser.Math.Between(30, 70);
                 pf.direction = 1;
                 this.movingPlatformsList.push(pf);
             }
-            x += Phaser.Math.Between(280,340);
+            x += Phaser.Math.Between(280, 340);
         }
     }
 
     setupUI(){
         document.fonts.ready.then(()=>{
-            this.hpIcons=[];
-            for(let i=0;i<this.maxHP;i++)
-                this.hpIcons.push(this.add.image(20+i*40,100,'heart_small').setScrollFactor(0).setScale(0.3));
-            this.heartText = this.add.text(20,60,`❤️ 0 / ${this.totalHearts}`,{fontSize:'32px',fill:'#e8d9b0', fontFamily:'gameFont'}).setScrollFactor(0);
+            this.hpIcons = [];
+            for(let i=0; i<this.maxHP; i++)
+                this.hpIcons.push(this.add.image(20 + i*40, 100, 'heart_small').setScrollFactor(0).setScale(0.3));
+            this.heartText = this.add.text(20, 60, `❤️ 0 / ${this.totalHearts}`, { fontSize:'32px', fill:'#e8d9b0', fontFamily:'gameFont' }).setScrollFactor(0);
         });
     }
 
@@ -403,29 +418,29 @@ class GameScene extends Phaser.Scene {
         this.hearts = this.physics.add.staticGroup();
         this.spawnHearts(this.totalHearts);
 
-        this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
+        this.physics.add.overlap(this.player, this.hearts, (p,h) => {
             h.destroy();
             this.heartsCollected++;
             this.sound.play('collect');
             this.heartText.setText(`❤️ ${this.heartsCollected} / ${this.totalHearts}`);
-            if(this.heartsCollected>=this.totalHearts) this.showWinText();
+            if(this.heartsCollected >= this.totalHearts) this.showWinText();
         });
     }
 
     setupEnemies(){
         const e = this.enemyType;
         this.enemies = this.physics.add.group();
-        for(let i=0;i<5;i++){
-            const x=800+i*900;
-            const y=620;
-            this.enemies.add(new Enemy(this,x,y,e));
+        for(let i = 0; i < 5; i++){
+            const x = 800 + i * 900;
+            const y = 620;
+            this.enemies.add(new Enemy(this, x, y, e));
         }
-        this.physics.add.collider(this.enemies,this.ground);
-        this.physics.add.collider(this.enemies,this.platforms);
+        this.physics.add.collider(this.enemies, this.ground);
+        this.physics.add.collider(this.enemies, this.platforms);
     }
 
     setupPlayerEnemyCollision(){
-        this.physics.add.collider(this.player,this.enemies,(p,e)=>{
+        this.physics.add.collider(this.player, this.enemies, (p, e) => {
             if(e.isDead) return;
 
             const stompMargin = 60;
@@ -433,9 +448,9 @@ class GameScene extends Phaser.Scene {
             const enemyTop = e.body.top;
             const playerCenterX = p.body.center.x;
             const enemyCenterX = e.body.center.x;
-            const enemyHalfWidth = e.body.width*0.5;
+            const enemyHalfWidth = e.body.width * 0.5;
 
-            const isAbove = playerBottom <= enemyTop + stompMargin && p.body.velocity.y>0;
+            const isAbove = playerBottom <= enemyTop + stompMargin && p.body.velocity.y > 0;
             const isCentered = Math.abs(playerCenterX - enemyCenterX) <= enemyHalfWidth;
 
             if(isAbove && isCentered){
@@ -447,24 +462,24 @@ class GameScene extends Phaser.Scene {
 
     spawnHearts(count){
         const plats = this.platforms.getChildren().concat(this.movingPlatformsList);
-        for(let i=0;i<count;i++){
-            let x,y,overlap;
+        for(let i = 0; i < count; i++){
+            let x, y, overlap;
             do{
-                x = Phaser.Math.Between(50,this.worldWidth-50);
-                y = Phaser.Math.Between(50,this.worldHeight-200);
+                x = Phaser.Math.Between(50, this.worldWidth - 50);
+                y = Phaser.Math.Between(50, this.worldHeight - 200);
 
-                overlap = plats.some(pl=>{
-                    const b=pl.getBounds();
-                    return x>b.left-20 && x<b.right+20 && y>b.top-20 && y<b.bottom+20;
-                }) || this.hearts.getChildren().some(h=>Math.abs(h.x-x)<40 && Math.abs(h.y-y)<40);
-            }while(overlap);
+                overlap = plats.some(pl => {
+                    const b = pl.getBounds();
+                    return x > b.left - 20 && x < b.right + 20 && y > b.top - 20 && y < b.bottom + 20;
+                }) || this.hearts.getChildren().some(h => Math.abs(h.x - x) < 40 && Math.abs(h.y - y) < 40);
+            } while(overlap);
 
-            const heart = this.hearts.create(x,y,'heart_collect').setScale(0.45).refreshBody();
-            this.tweens.add({targets:heart,scale:0.5,duration:800,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
+            const heart = this.hearts.create(x, y, 'heart_collect').setScale(0.45).refreshBody();
+            this.tweens.add({ targets: heart, scale: 0.5, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
         }
     }
 
-    showWinText(){ this.scene.start('WinScene',{player:this.selectedPlayer}); }
+    showWinText(){ this.scene.start('WinScene', { player: this.selectedPlayer }); }
 
     createMobileButtons(){
         const y = this.scale.height - 80;
@@ -472,21 +487,22 @@ class GameScene extends Phaser.Scene {
         const right = this.add.image(160, y, 'right_btn').setInteractive().setScrollFactor(0);
         const jump = this.add.image(this.scale.width-80, y, 'jump_btn').setInteractive().setScrollFactor(0);
 
-        [left,right,jump].forEach(btn=>{
-            this.tweens.add({targets:btn,scale:1.1,duration:600,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
+        [left, right, jump].forEach(btn=>{
+            this.tweens.add({ targets: btn, scale:1.1, duration:600, yoyo:true, repeat:-1, ease:'Sine.easeInOut' });
         });
 
-        left.on('pointerdown',()=>this.player.moveLeft=true);
-        left.on('pointerup',()=>this.player.moveLeft=false);
-        left.on('pointerout',()=>this.player.moveLeft=false);
+        left.on('pointerdown', ()=> this.player.moveLeft = true);
+        left.on('pointerup', ()=> this.player.moveLeft = false);
+        left.on('pointerout', ()=> this.player.moveLeft = false);
 
-        right.on('pointerdown',()=>this.player.moveRight=true);
-        right.on('pointerup',()=>this.player.moveRight=false);
-        right.on('pointerout',()=>this.player.moveRight=false);
+        right.on('pointerdown', ()=> this.player.moveRight = true);
+        right.on('pointerup', ()=> this.player.moveRight = false);
+        right.on('pointerout', ()=> this.player.moveRight = false);
 
-        jump.on('pointerdown',()=>{ this.player.jumpRequest=true; });
+        jump.on('pointerdown', ()=> this.player.jumpRequest = true);
     }
 }
+
 
 /* =========================================================
    WIN / LOSE SCENES
