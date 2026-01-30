@@ -276,14 +276,23 @@ class GameScene extends Phaser.Scene {
         this.enemyType = this.selectedPlayer==='player1'?'player2':'player1';
         this.hp = this.maxHP;
         this.heartsCollected = 0;
+
+        // Унікальний суфікс для ворога
+        this.enemySuffix = Date.now();
     }
 
     preload(){
-        const p = this.selectedPlayer, e = this.enemyType;
+        const p = this.selectedPlayer;
+        const e = this.enemyType;
+        const s = this.enemySuffix;
+
+        // Гравець
         this.load.image(`${p}_idle`,`assets/${p}/idle.png`);
         this.load.spritesheet(`${p}_walk`,`assets/${p}/walk.png`,{frameWidth:142,frameHeight:142});
-        this.load.image(`${e}_idle`,`assets/${e}/idle.png`);
-        this.load.spritesheet(`${e}_walk`,`assets/${e}/walk.png`,{frameWidth:142,frameHeight:142});
+
+        // Ворог із унікальним ключем
+        this.load.image(`${e}_idle_${s}`,`assets/${e}/idle.png`);
+        this.load.spritesheet(`${e}_walk_${s}`,`assets/${e}/walk.png`,{frameWidth:142,frameHeight:142});
 
         this.load.image('bg','assets/backgrounds/bg.png');
         this.load.image('ground','assets/platforms/ground.png');
@@ -304,12 +313,17 @@ class GameScene extends Phaser.Scene {
 
     create(){
         const {width,height} = this.scale;
+        const p = this.selectedPlayer;
+        const e = this.enemyType;
+        const s = this.enemySuffix;
 
-        // Анімації гравця і ворога
-        this.anims.create({key:'idle',frames:[{key:`${this.selectedPlayer}_idle`}],repeat:-1});
-        this.anims.create({key:'walk',frames:this.anims.generateFrameNumbers(`${this.selectedPlayer}_walk`),frameRate:10,repeat:-1});
-        this.anims.create({key:`${this.enemyType}_idle`,frames:[{key:`${this.enemyType}_idle`}],repeat:-1});
-        this.anims.create({key:`${this.enemyType}_walk`,frames:this.anims.generateFrameNumbers(`${this.enemyType}_walk`),frameRate:10,repeat:-1});
+        // Анімації гравця
+        this.anims.create({key:'idle',frames:[{key:`${p}_idle`}],repeat:-1});
+        this.anims.create({key:'walk',frames:this.anims.generateFrameNumbers(`${p}_walk`),frameRate:10,repeat:-1});
+
+        // Анімації ворога
+        this.anims.create({key:`${e}_idle`,frames:[{key:`${e}_idle_${s}`}],repeat:-1});
+        this.anims.create({key:`${e}_walk`,frames:this.anims.generateFrameNumbers(`${e}_walk_${s}`),frameRate:10,repeat:-1});
 
         // Світ
         this.physics.world.setBounds(0,0,this.worldWidth,this.worldHeight);
@@ -327,7 +341,7 @@ class GameScene extends Phaser.Scene {
         this.spawnPlatforms();
 
         // PLAYER
-        this.player = new Player(this,200,620,`${this.selectedPlayer}_idle`);
+        this.player = new Player(this,200,620,`${p}_idle`);
         this.physics.add.collider(this.player,this.ground);
         this.physics.add.collider(this.player,this.platforms);
         this.physics.add.collider(this.player,this.movingPlatforms);
@@ -337,6 +351,83 @@ class GameScene extends Phaser.Scene {
         this.cameras.main.setBounds(0,0,this.worldWidth,this.worldHeight);
 
         // UI
+        this.setupUI();
+
+        // HEARTS
+        this.setupHearts();
+
+        // ENEMIES
+        this.setupEnemies();
+
+        // PLAYER ↔ ENEMY
+        this.setupPlayerEnemyCollision();
+
+        // Mobile buttons
+        if(this.sys.game.device.os.android || this.sys.game.device.os.iOS) this.createMobileButtons();
+    }
+
+    update(){
+        // Паралакс
+        this.bg.tilePositionX=this.cameras.main.scrollX*0.3;
+
+        // ENEMIES патрулювання
+        this.enemies.getChildren().forEach(e=>{
+            if(e.isDead) return;
+            const p = this.player;
+            const dist = Phaser.Math.Distance.Between(e.x,e.y,p.x,p.y);
+
+            let targetDir = e.direction;
+            if(dist < 450) targetDir = p.x < e.x ? -1 : 1;
+
+            if(e.x + targetDir * e.speed * this.game.loop.delta/1000 <= 0 ||
+               e.x + targetDir * e.speed * this.game.loop.delta/1000 >= this.worldWidth){
+                e.direction *= -1;
+                targetDir = e.direction;
+            }
+
+            e.setVelocityX(targetDir * e.speed);
+            e.setFlipX(targetDir < 0);
+            if(Math.abs(e.body.velocity.x)>5) e.anims.play(`${e.type}_walk`,true);
+            else e.anims.play(`${e.type}_idle`,true);
+        });
+
+        // Рухомі платформи
+        this.movingPlatformsList.forEach(pf=>{
+            pf.y += pf.speed * pf.direction * this.game.loop.delta/1000;
+            if(pf.y<260 || pf.y>480) pf.direction*=-1;
+        });
+    }
+
+    // ======================= HELPERS =======================
+    damage(){
+        this.hp--;
+        if(this.hp<0) this.hp=0;
+        this.hpIcons[this.hp]?.setAlpha(0);
+        if(this.hp<=0) this.scene.start('LoseScene',{player:this.selectedPlayer});
+    }
+
+    spawnPlatforms(){
+        let x=500,lastWasMoving=false;
+        for(let i=0;i<20;i++){
+            const y=Phaser.Math.Between(260,380);
+            let isMoving=!lastWasMoving && Phaser.Math.Between(0,3)<1;
+            lastWasMoving=isMoving;
+
+            const pf = isMoving ? this.movingPlatforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`) :
+                                  this.platforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`);
+            pf.refreshBody();
+
+            if(isMoving){
+                pf.isMoving = true;
+                pf.speed = Phaser.Math.Between(30,70);
+                pf.direction = 1;
+                this.movingPlatformsList.push(pf);
+            }
+            x += Phaser.Math.Between(280,340);
+        }
+    }
+
+    setupUI(){
         document.fonts.ready.then(()=>{
             this.hpIcons = [];
             for(let i=0;i<this.maxHP;i++)
@@ -345,10 +436,13 @@ class GameScene extends Phaser.Scene {
                 fontSize:'32px',fill:'#e8d9b0', fontFamily:'gameFont'
             }).setScrollFactor(0);
         });
+    }
 
-        // HEARTS
+    setupHearts(){
         this.hearts = this.physics.add.staticGroup();
-        this.spawnHearts(this.totalHearts);
+        const count = this.totalHearts;
+        this.spawnHearts(count);
+
         this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
             h.destroy();
             this.heartsCollected++;
@@ -356,6 +450,84 @@ class GameScene extends Phaser.Scene {
             this.heartText.setText(`❤️ ${this.heartsCollected} / ${this.totalHearts}`);
             if(this.heartsCollected>=this.totalHearts) this.showWinText();
         });
+    }
+
+    setupEnemies(){
+        const e = this.enemyType;
+        this.enemies = this.physics.add.group();
+        for(let i=0;i<5;i++){
+            const x=800+i*900;
+            const y=620;
+            this.enemies.add(new Enemy(this,x,y,e));
+        }
+        this.physics.add.collider(this.enemies,this.ground);
+        this.physics.add.collider(this.enemies,this.platforms);
+    }
+
+    setupPlayerEnemyCollision(){
+        this.physics.add.collider(this.player, this.enemies, (p, e) => {
+            if(e.isDead) return;
+
+            const stompMargin = 40;
+            const playerBottom = p.body.bottom;
+            const enemyTop = e.body.top;
+            const playerCenterX = p.body.center.x;
+            const enemyCenterX = e.body.center.x;
+            const enemyHalfWidth = e.body.width*0.35;
+
+            const isAbove = playerBottom <= enemyTop + stompMargin && p.body.velocity.y > 0;
+            const isCentered = Math.abs(playerCenterX - enemyCenterX) <= enemyHalfWidth;
+
+            if(isAbove && isCentered){
+                e.die();
+                p.setVelocityY(-350);
+            } else this.damage();
+        });
+    }
+
+    spawnHearts(count){
+        const plats = this.platforms.getChildren().concat(this.movingPlatformsList);
+        for(let i=0;i<count;i++){
+            let x, y, overlap;
+            do {
+                x = Phaser.Math.Between(50,this.worldWidth-50);
+                y = Phaser.Math.Between(50,this.worldHeight-200);
+
+                overlap = plats.some(pl=>{
+                    const b=pl.getBounds();
+                    return x>b.left-20 && x<b.right+20 && y>b.top-20 && y<b.bottom+20;
+                }) || this.hearts.getChildren().some(h=>Math.abs(h.x-x)<40 && Math.abs(h.y-y)<40);
+            } while(overlap);
+
+            const heart = this.hearts.create(x,y,'heart_collect').setScale(0.45).refreshBody();
+            this.tweens.add({targets:heart,scale:0.5,duration:800,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
+        }
+    }
+
+    showWinText(){ this.scene.start('WinScene',{player:this.selectedPlayer}); }
+
+    createMobileButtons(){
+        const y = this.scale.height - 80;
+        const left = this.add.image(60, y, 'left_btn').setInteractive().setScrollFactor(0);
+        const right = this.add.image(160, y, 'right_btn').setInteractive().setScrollFactor(0);
+        const jump = this.add.image(this.scale.width - 80, y, 'jump_btn').setInteractive().setScrollFactor(0);
+
+        [left,right,jump].forEach(btn=>{
+            this.tweens.add({targets:btn,scale:1.1,duration:600,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
+        });
+
+        left.on('pointerdown',()=>this.player.moveLeft=true);
+        left.on('pointerup',()=>this.player.moveLeft=false);
+        left.on('pointerout',()=>this.player.moveLeft=false);
+
+        right.on('pointerdown',()=>this.player.moveRight=true);
+        right.on('pointerup',()=>this.player.moveRight=false);
+        right.on('pointerout',()=>this.player.moveRight=false);
+
+        jump.on('pointerdown',()=>{ this.player.jumpRequest = true; });
+    }
+}
+
 
         // ENEMIES
         this.enemies = this.physics.add.group();
