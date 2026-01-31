@@ -1,9 +1,7 @@
 /* =========================================================
-   GLOBAL
+   TELEGRAM INIT
 ========================================================= */
-let selectedPlayer = 'player1';
 let tg = null;
-
 if (window.Telegram && window.Telegram.WebApp) {
     tg = window.Telegram.WebApp;
     tg.ready();
@@ -12,11 +10,15 @@ if (window.Telegram && window.Telegram.WebApp) {
 }
 
 /* =========================================================
+   GLOBAL
+========================================================= */
+let selectedPlayer = 'player1';
+
+/* =========================================================
    MENU SCENE
 ========================================================= */
 class MenuScene extends Phaser.Scene {
     constructor(){ super('MenuScene'); }
-
     preload(){
         this.load.image('bg_far','assets/backgrounds/bg_far.png');
         this.load.image('bg_mid','assets/backgrounds/bg_mid.png');
@@ -25,36 +27,50 @@ class MenuScene extends Phaser.Scene {
         this.load.audio('menu_hover','assets/sounds/hover.mp3');
         this.load.audio('menu_click','assets/sounds/collect.mp3');
     }
-
     create(){
-        const { width, height } = this.scale;
+        const {width,height} = this.scale;
+        this.bgFar  = this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
+        this.bgMid  = this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
+        this.bgNear = this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
-        this.add.image(width/2,height/2,'bg_far').setScrollFactor(0);
-        this.add.image(width/2,height/2,'bg_mid').setScrollFactor(0);
-        this.add.image(width/2,height/2,'bg_near').setScrollFactor(0);
+        document.fonts.ready.then(()=>{
+            const titleStyle = { fontFamily:'UnifrakturCook', fontSize:'120px', fill:'#e8d9b0' };
+            const optionStyle = { fontFamily:'UnifrakturCook', fontSize:'56px', fill:'#e8d9b0' };
 
-        const titleStyle = { fontFamily:'UnifrakturCook', fontSize:'64px', fill:'#fff' };
-        const optionStyle = { fontFamily:'UnifrakturCook', fontSize:'36px', fill:'#fff' };
+            this.add.text(width/2,height/3,'Pink Yupik Arcade', titleStyle).setOrigin(0.5);
 
-        this.add.text(width/2,100,'Pink Yupik Arcade',titleStyle).setOrigin(0.5);
+            this.playBtn = this.add.text(width/2,height/2,'PLAY',optionStyle)
+                .setOrigin(0.5)
+                .setInteractive()
+                .on('pointerover',()=>this.sound.play('menu_hover'))
+                .on('pointerdown',()=>{
+                    this.sound.play('menu_click');
+                    this.scene.start('SelectScene');
+                });
 
-        this.playBtn = this.add.text(width/2,height/2,'PLAY',optionStyle)
-            .setOrigin(0.5)
-            .setInteractive()
-            .on('pointerover',()=>this.sound.play('menu_hover'))
-            .on('pointerdown',()=>{
-                this.sound.play('menu_click');
-                this.scene.start('SelectScene');
+            this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',optionStyle)
+                .setOrigin(0.5)
+                .setInteractive()
+                .on('pointerover',()=>this.sound.play('menu_hover'))
+                .on('pointerdown',()=>{
+                    this.sound.play('menu_click');
+                    window.Telegram?.WebApp?.close();
+                });
+
+            this.tweens.add({
+                targets:[this.playBtn,this.exitBtn],
+                scale:1.1,
+                duration:600,
+                yoyo:true,
+                repeat:-1,
+                ease:'Sine.easeInOut'
             });
-
-        this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',optionStyle)
-            .setOrigin(0.5)
-            .setInteractive()
-            .on('pointerover',()=>this.sound.play('menu_hover'))
-            .on('pointerdown',()=>{
-                this.sound.play('menu_click');
-                window.Telegram?.WebApp?.close();
-            });
+        });
+    }
+    update(){
+        this.bgFar.tilePositionX += 0.2;
+        this.bgMid.tilePositionX += 0.5;
+        this.bgNear.tilePositionX += 1;
     }
 }
 
@@ -63,40 +79,174 @@ class MenuScene extends Phaser.Scene {
 ========================================================= */
 class SelectScene extends Phaser.Scene {
     constructor(){ super('SelectScene'); }
-
     preload(){
-        this.load.spritesheet('player1','assets/player1.png',{ frameWidth:48, frameHeight:48 });
-        this.load.spritesheet('player2','assets/player2.png',{ frameWidth:48, frameHeight:48 });
+        this.load.image('bg_far','assets/backgrounds/bg_far.png');
+        this.load.image('bg_mid','assets/backgrounds/bg_mid.png');
+        this.load.image('bg_near','assets/backgrounds/bg_near.png');
+        this.load.image('platform','assets/platforms/platform_1.png');
+        this.load.image('player1_idle','assets/player1/idle.png');
+        this.load.image('player2_idle','assets/player2/idle.png');
 
         this.load.audio('menu_hover','assets/sounds/hover.mp3');
         this.load.audio('menu_click','assets/sounds/collect.mp3');
     }
-
     create(){
-        const { width, height } = this.scale;
-        const style = { fontFamily:'UnifrakturCook', fontSize:'32px', fill:'#fff' };
+        const {width,height} = this.scale;
+        this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
+        this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
+        this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
-        this.add.text(width/2,80,'Select Hero',style).setOrigin(0.5);
+        document.fonts.ready.then(()=>{
+            const titleStyle = { fontFamily:'UnifrakturCook', fontSize:'64px', fill:'#e8d9b0' };
+            this.add.text(width/2,120,'Select Character', titleStyle).setOrigin(0.5);
 
-        const p1 = this.add.sprite(width/2-100,height/2,'player1',0).setInteractive();
-        const p2 = this.add.sprite(width/2+100,height/2,'player2',0).setInteractive();
+            const y = height/2 + 120;
+            this.add.image(width/2-220,y,'platform');
+            this.add.image(width/2+220,y,'platform');
 
-        p1.on('pointerover',()=>this.sound.play('menu_hover'));
-        p2.on('pointerover',()=>this.sound.play('menu_hover'));
+            const p1=this.add.image(width/2-220,y-110,'player1_idle')
+                .setInteractive()
+                .on('pointerover',()=>this.sound.play('menu_hover'))
+                .on('pointerdown',()=>{
+                    this.sound.play('menu_click');
+                    this.scene.start('GameScene',{player:'player1'});
+                });
 
-        p1.on('pointerdown',()=>{
-            this.sound.play('menu_click');
-            selectedPlayer = 'player1';
-            this.scene.start('GameScene',{player:'player1'});
-        });
+            const p2=this.add.image(width/2+220,y-110,'player2_idle')
+                .setInteractive()
+                .on('pointerover',()=>this.sound.play('menu_hover'))
+                .on('pointerdown',()=>{
+                    this.sound.play('menu_click');
+                    this.scene.start('GameScene',{player:'player2'});
+                });
 
-        p2.on('pointerdown',()=>{
-            this.sound.play('menu_click');
-            selectedPlayer = 'player2';
-            this.scene.start('GameScene',{player:'player2'});
+            this.tweens.add({
+                targets:[p1,p2],
+                scale:1.1,
+                duration:600,
+                yoyo:true,
+                repeat:-1,
+                ease:'Sine.easeInOut'
+            });
         });
     }
 }
+
+/* =========================================================
+   PLAYER
+========================================================= */
+class Player extends Phaser.Physics.Arcade.Sprite {
+    constructor(scene,x,y,key){
+        super(scene,x,y,key);
+        scene.add.existing(this);
+        scene.physics.add.existing(this);
+        this.setCollideWorldBounds(true).setBodySize(90,120).setOffset(26,18);
+
+        this.speed=180; this.accel=900; this.jumpVelocity=520;
+        this.jumpCount=0; this.maxJumps=3;
+        this.body.setDragX(1200).setMaxVelocity(this.speed,1000);
+
+        this.keys=scene.input.keyboard.addKeys({
+            left:'A', right:'D', up:'W',
+            left2:'LEFT', right2:'RIGHT', up2:'UP'
+        });
+        this.moveLeft=false; this.moveRight=false; this.jump=false;
+        this.scene=scene;
+        this.invulnerable=false;
+        this.stepTimer=0;
+    }
+
+    takeHit(fromX){
+        if(this.invulnerable) return;
+        this.invulnerable=true;
+        const dir=this.x<fromX?-1:1;
+        this.setVelocityX(dir*250);
+        this.setVelocityY(-250);
+        this.scene.sound.play('hit');
+
+        this.scene.tweens.add({
+            targets:this,
+            alpha:0,
+            duration:100,
+            yoyo:true,
+            repeat:10,
+            onComplete:()=>{
+                this.alpha=1;
+                this.invulnerable=false;
+            }
+        });
+    }
+
+    preUpdate(t,d){
+        super.preUpdate(t,d);
+
+        const l=this.keys.left.isDown||this.keys.left2.isDown||this.moveLeft;
+        const r=this.keys.right.isDown||this.keys.right2.isDown||this.moveRight;
+
+        if(l) this.setAccelerationX(-this.accel);
+        else if(r) this.setAccelerationX(this.accel);
+        else this.setAccelerationX(0);
+
+        if(((Phaser.Input.Keyboard.JustDown(this.keys.up)||Phaser.Input.Keyboard.JustDown(this.keys.up2))||this.jump)
+           && this.jumpCount<this.maxJumps){
+            this.setVelocityY(-this.jumpVelocity);
+            this.jumpCount++;
+            this.scene.sound.play('jump');
+        }
+
+        if(this.body.blocked.down) this.jumpCount=0;
+        if(l) this.setFlipX(true);
+        else if(r) this.setFlipX(false);
+
+        if(Math.abs(this.body.velocity.x)>5){
+            this.anims.play('walk',true);
+            if(this.body.blocked.down && t>this.stepTimer){
+                this.scene.sound.play('step',{volume:0.5});
+                this.stepTimer=t+350;
+            }
+        } else {
+            this.anims.play('idle',true);
+        }
+    }
+}
+
+/* =========================================================
+   ENEMY
+========================================================= */
+class Enemy extends Phaser.Physics.Arcade.Sprite {
+    constructor(scene,x,y,type){
+        super(scene,x,y,`${type}_idle`);
+        scene.add.existing(this);
+        scene.physics.add.existing(this);
+        this.type=type; this.speed=120; this.isDead=false;
+        this.setCollideWorldBounds(true).setBodySize(90,120).setOffset(26,18);
+        this.direction=1;
+    }
+
+    die(){
+        if(this.isDead) return;
+        this.isDead=true;
+        this.scene.sound.play('enemy_die');
+        this.disableBody(true,true);
+
+        const h = this.scene.physics.add.image(this.x,this.y-20,'heart_small')
+            .setScale(0.4).setBounce(0.4)
+            .setVelocity(Phaser.Math.Between(-80,80),-260)
+            .setCollideWorldBounds(true);
+
+        this.scene.physics.add.collider(h,this.scene.ground);
+        this.scene.physics.add.collider(h,this.scene.platforms);
+        this.scene.physics.add.collider(h,this.scene.movingPlatforms);
+
+        this.scene.physics.add.overlap(this.scene.player,h,()=>{
+            h.destroy();
+            this.scene.hp = Math.min(this.scene.hp+1,this.scene.maxHP);
+            this.scene.hpIcons[this.scene.hp-1].setAlpha(1);
+            this.scene.sound.play('heart_pick');
+        });
+    }
+}
+
 
 /* =========================================================
    GAME SCENE
