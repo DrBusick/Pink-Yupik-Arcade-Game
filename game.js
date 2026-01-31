@@ -276,7 +276,9 @@ class GameScene extends Phaser.Scene {
         for(let i=1;i<=4;i++) this.load.image(`pf${i}`,'assets/platforms/platform_'+i+'.png');
         this.load.image('heart_collect','assets/items/heart_v4.png');
         this.load.image('heart_small','assets/items/heart_small.png');
-
+this.load.image('btn_left',  'assets/ui/btn_left.png');
+this.load.image('btn_right', 'assets/ui/btn_right.png');
+this.load.image('btn_jump',  'assets/ui/btn_jump.png');
         this.load.audio('jump','assets/sounds/jump.mp3');
         this.load.audio('step','assets/sounds/walk.mp3');
         this.load.audio('heart_pick','assets/sounds/collect.mp3');
@@ -459,23 +461,56 @@ class GameScene extends Phaser.Scene {
         this.time.delayedCall(2000,()=>this.scene.start('MenuScene'));
     }
 
-    createMobileButtons(){
-        const left=this.add.dom(20,this.scale.height-80,'div','class=button','◀').setOrigin(0);
-        const right=this.add.dom(100,this.scale.height-80,'div','class=button','▶').setOrigin(0);
-        const jump=this.add.dom(this.scale.width-80,this.scale.height-80,'div','class=button','▲').setOrigin(0);
+    createTouchControls() {
+    const { width, height } = this.scale;
 
-        [left,right,jump].forEach(btn=>this.tweens.add({targets:btn,scale:1.1,duration:600,yoyo:true,repeat:-1,ease:'Sine.easeInOut'}));
+    const scaleIdle = 0.9;
+    const scaleDown = 0.8;
 
-        left.addListener('pointerdown'); left.on('pointerdown',()=>this.player.moveLeft=true);
-        left.addListener('pointerup'); left.on('pointerup',()=>this.player.moveLeft=false);
+    const makeBtn = (x, y, key) => {
+    const btn = this.add.image(x, y, key)
+        .setScrollFactor(0)
+        .setDepth(9999)
+        .setScale(scaleIdle)
+        .setAlpha(0.55)
+        .setInteractive({ pointerDownOutside: true });
 
-        right.addListener('pointerdown'); right.on('pointerdown',()=>this.player.moveRight=true);
-        right.addListener('pointerup'); right.on('pointerup',()=>this.player.moveRight=false);
+    btn.on('pointerdown', () => {
+        btn.setScale(scaleDown);
+        btn.setAlpha(0.85);
+    });
 
-        jump.addListener('pointerdown'); jump.on('pointerdown',()=>this.player.jump=true);
-        jump.addListener('pointerup'); jump.on('pointerup',()=>this.player.jump=false);
-    }
+    btn.on('pointerup', () => {
+        btn.setScale(scaleIdle);
+        btn.setAlpha(0.55);
+    });
+
+    btn.on('pointerout', () => {
+        btn.setScale(scaleIdle);
+        btn.setAlpha(0.55);
+    });
+
+    return btn;
+};
+
+
+    const left = makeBtn(130, height - 120, 'btn_left');
+    left.on('pointerdown', () => this.player.touchLeft = true);
+    left.on('pointerup',   () => this.player.touchLeft = false);
+    left.on('pointerout',  () => this.player.touchLeft = false);
+
+    const right = makeBtn(260, height - 120, 'btn_right');
+    right.on('pointerdown', () => this.player.touchRight = true);
+    right.on('pointerup',   () => this.player.touchRight = false);
+    right.on('pointerout',  () => this.player.touchRight = false);
+
+    const jump = makeBtn(width - 140, height - 120, 'btn_jump');
+jump.on('pointerdown', () => this.player.touchJump = true);
+jump.on('pointerup',   () => this.player.touchJump = false);
+jump.on('pointerout',  () => this.player.touchJump = false);
+
 }
+
 
 /* =========================================================
    WIN / LOSE SCENES
