@@ -105,6 +105,7 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         this.setBodySize(90,120).setOffset(26,18);
 
         this.speed=180;
+        this.accel=900;
         this.jumpVelocity=520;
         this.jumpCount=0;
         this.maxJumps=3;
@@ -152,13 +153,13 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         const right=this.keys.right.isDown||this.keys.right2.isDown||this.moveRight;
 
         if(left){
-            this.setVelocityX(-this.speed);
+            this.setAccelerationX(-this.accel);
             this.setFlipX(true);
         } else if(right){
-            this.setVelocityX(this.speed);
+            this.setAccelerationX(this.accel);
             this.setFlipX(false);
         } else {
-            this.setVelocityX(0);
+            this.setAccelerationX(0);
         }
 
         if(((Phaser.Input.Keyboard.JustDown(this.keys.up)||Phaser.Input.Keyboard.JustDown(this.keys.up2))||this.jump)
@@ -188,7 +189,7 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
         scene.physics.add.existing(this);
 
         this.type=type;
-        this.speed=100;
+        this.speed=120;
         this.isDead=false;
 
         this.setCollideWorldBounds(true);
@@ -199,10 +200,6 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
     die(){
         if(this.isDead) return;
         this.isDead=true;
-        this.body.stop();
-        this.body.enable=false;
-        this.setActive(false);
-        this.setVisible(false);
         this.disableBody(true,true);
     }
 }
@@ -215,8 +212,9 @@ class GameScene extends Phaser.Scene {
         super('GameScene');
         this.worldWidth=6000;
         this.worldHeight=832;
-        this.maxHP=3;
+        this.maxHP=5;
         this.totalHearts=25;
+        this.movingPlatformsList=[];
     }
 
     init(data){
@@ -238,16 +236,28 @@ class GameScene extends Phaser.Scene {
         this.load.image('ground','assets/platforms/ground.png');
         for(let i=1;i<=4;i++) this.load.image(`pf${i}`,`assets/platforms/platform_${i}.png`);
         this.load.image('heart_collect','assets/items/heart_v4.png');
+        this.load.image('heart_small','assets/items/heart_small.png');
     }
 
     create(){
         const p=this.selectedPlayer;
+        const e=this.enemyType;
 
         if(!this.anims.exists(`${p}_idle`)){
             this.anims.create({key:`${p}_idle`,frames:[{key:`${p}_idle`}],repeat:-1});
             this.anims.create({
                 key:`${p}_walk`,
                 frames:this.anims.generateFrameNumbers(`${p}_walk`),
+                frameRate:10,
+                repeat:-1
+            });
+        }
+
+        if(!this.anims.exists(`${e}_idle`)){
+            this.anims.create({key:`${e}_idle`,frames:[{key:`${e}_idle`}],repeat:-1});
+            this.anims.create({
+                key:`${e}_walk`,
+                frames:this.anims.generateFrameNumbers(`${e}_walk`),
                 frameRate:10,
                 repeat:-1
             });
@@ -264,34 +274,37 @@ class GameScene extends Phaser.Scene {
 
         /* PLATFORMS */
         this.platforms=this.physics.add.staticGroup();
-        let x=500;
-        for(let i=0;i<20;i++){
-            const y=Phaser.Math.Between(260,380);
-            const pf=this.platforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`);
-            pf.refreshBody();
-            x+=Phaser.Math.Between(280,340);
-        }
+        this.movingPlatforms=this.physics.add.group({allowGravity:false,immovable:true});
+        this.spawnPlatforms();
 
         /* PLAYER */
         this.player=new Player(this,200,620,`${this.selectedPlayer}_idle`);
         this.physics.add.collider(this.player,this.ground);
         this.physics.add.collider(this.player,this.platforms);
+        this.physics.add.collider(this.player,this.movingPlatforms);
+
+        /* CAMERA */
+        this.cameras.main.startFollow(this.player,true,0.12,0.12);
+        this.cameras.main.setBounds(0,0,this.worldWidth,this.worldHeight);
+
+        /* UI */
+        this.hpIcons=[];
+        for(let i=0;i<this.maxHP;i++){
+            this.hpIcons.push(this.add.image(20+i*40,100,'heart_small')
+                .setScrollFactor(0).setScale(0.3));
+        }
+
+        this.heartText=this.add.text(20,60,`❤️ 0 / ${this.totalHearts}`,{
+            fontSize:'32px',fill:'#e8d9b0', fontFamily:'UnifrakturCook'
+        }).setScrollFactor(0);
 
         /* HEARTS */
         this.hearts=this.physics.add.staticGroup();
-        for(let i=0;i<this.totalHearts;i++){
-            const h=this.hearts.create(
-                Phaser.Math.Between(300,this.worldWidth-300),
-                Phaser.Math.Between(120,520),
-                'heart_collect'
-            ).setScale(0.45);
-
-            this.tweens.add({targets:h,scale:0.55,duration:800,yoyo:true,repeat:-1});
-        }
-
+        this.spawnHearts(this.totalHearts);
         this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
             h.destroy();
             this.heartsCollected++;
+            this.heartText.setText(`❤️ ${this.heartsCollected} / ${this.totalHearts}`);
             if(this.heartsCollected>=this.totalHearts){
                 this.scene.start('WinScene',{player:this.selectedPlayer});
             }
@@ -304,21 +317,19 @@ class GameScene extends Phaser.Scene {
 
         this.physics.add.collider(this.enemies,this.ground);
         this.physics.add.collider(this.enemies,this.platforms);
+        this.physics.add.collider(this.enemies,this.movingPlatforms);
 
         this.physics.add.collider(this.player,this.enemies,(p,e)=>{
-            if(!e.active||e.isDead) return;
+            if(e.isDead) return;
 
-            if(p.body.velocity.y>0 && p.y<e.y){
+            // Вбивство тільки якщо герой зверху + запас 30px
+            if(p.body.velocity.y>0 && (p.y+30) < e.y){
                 e.die();
-                p.setVelocityY(-300);
+                p.setVelocityY(-350);
             } else {
-                p.takeHit(e.x);
-                this.damage();
+                this.damage(e.x);
             }
         });
-
-        this.cameras.main.startFollow(this.player,true,0.1,0.1);
-        this.cameras.main.setBounds(0,0,this.worldWidth,this.worldHeight);
 
         if(this.sys.game.device.os.android || this.sys.game.device.os.iOS){
             this.createMobileButtons();
@@ -329,19 +340,82 @@ class GameScene extends Phaser.Scene {
         this.bg.tilePositionX=this.cameras.main.scrollX*0.3;
 
         this.enemies.getChildren().forEach(e=>{
-            if(!e.active||e.isDead) return;
+            if(e.isDead) return;
+
             const dir=this.player.x<e.x?-1:1;
             e.setVelocityX(dir*e.speed);
             e.setFlipX(dir<0);
-            e.anims.play(`${this.enemyType}_walk`,true);
+            e.anims.play(`${e.type}_walk`,true);
+        });
+
+        // Рух платформ
+        this.movingPlatformsList.forEach(pf=>{
+            pf.y += pf.speed * pf.direction * (1/60);
+            if(pf.y > pf.maxY || pf.y < pf.minY){
+                pf.direction *= -1;
+            }
         });
     }
 
-    damage(){
+    damage(fromX){
         if(this.hp<=0) return;
         this.hp--;
+        this.hpIcons[this.hp].setAlpha(0);
+        this.player.takeHit(fromX);
         if(this.hp<=0){
             this.scene.start('LoseScene',{player:this.selectedPlayer});
+        }
+    }
+
+    spawnPlatforms(){
+        let x=500;
+        let movingCount=0;
+        let lastWasMoving=false;
+
+        for(let i=0;i<20;i++){
+            const y=Phaser.Math.Between(260,380);
+            let isMoving=false;
+
+            if(!lastWasMoving && movingCount<5 && Phaser.Math.Between(0,3)===0){
+                isMoving=true;
+                movingCount++;
+            }
+
+            const pf=isMoving
+                ? this.movingPlatforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`)
+                : this.platforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`);
+
+            pf.refreshBody();
+
+            if(isMoving){
+                pf.isMoving=true;
+                pf.speed=40;
+                pf.direction=1;
+                pf.minY=y-60;
+                pf.maxY=y+60;
+                this.movingPlatformsList.push(pf);
+            }
+
+            lastWasMoving=isMoving;
+            x+=Phaser.Math.Between(280,340);
+        }
+    }
+
+    spawnHearts(count){
+        const plats=this.platforms.getChildren().concat(this.movingPlatformsList);
+        for(let i=0;i<count;i++){
+            let x,y,overlap;
+            do{
+                x=Phaser.Math.Between(50,this.worldWidth-50);
+                y=Phaser.Math.Between(50,this.worldHeight-200);
+                overlap = plats.some(pl=>{
+                    const b=pl.getBounds();
+                    return x>b.left-20 && x<b.right+20 && y>b.top-20 && y<b.bottom+20;
+                }) || this.hearts.getChildren().some(h=>Math.abs(h.x-x)<40 && Math.abs(h.y-y)<40);
+            } while(overlap);
+
+            const heart=this.hearts.create(x,y,'heart_collect').setScale(0.45).refreshBody();
+            this.tweens.add({targets:heart,scale:0.5,duration:800,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
         }
     }
 
