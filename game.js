@@ -19,6 +19,7 @@ let selectedPlayer = 'player1';
 ========================================================= */
 class MenuScene extends Phaser.Scene {
     constructor(){ super('MenuScene'); }
+
     preload(){
         this.load.image('bg_far','assets/backgrounds/bg_far.png');
         this.load.image('bg_mid','assets/backgrounds/bg_mid.png');
@@ -27,52 +28,61 @@ class MenuScene extends Phaser.Scene {
         this.load.audio('menu_hover','assets/sounds/hover.mp3');
         this.load.audio('menu_click','assets/sounds/collect.mp3');
     }
+
     create(){
-        const {width,height} = this.scale;
+        const { width, height } = this.scale;
+
+        // Фонові шари
         this.bgFar  = this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
         this.bgMid  = this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
         this.bgNear = this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
-        document.fonts.ready.then(()=>{
-            const titleStyle = { fontFamily:'UnifrakturCook', fontSize:'120px', fill:'#e8d9b0' };
-            const optionStyle = { fontFamily:'UnifrakturCook', fontSize:'56px', fill:'#e8d9b0' };
+        // Стилі тексту з резервним шрифтом
+        const titleStyle = { fontFamily:'UnifrakturCook, Arial', fontSize:'120px', fill:'#e8d9b0' };
+        const optionStyle = { fontFamily:'UnifrakturCook, Arial', fontSize:'56px', fill:'#e8d9b0' };
 
-            this.add.text(width/2,height/3,'Pink Yupik Arcade', titleStyle).setOrigin(0.5);
+        // Заголовок
+        this.add.text(width/2, height/3, 'Pink Yupik Arcade', titleStyle).setOrigin(0.5);
 
-            this.playBtn = this.add.text(width/2,height/2,'PLAY',optionStyle)
-                .setOrigin(0.5)
-                .setInteractive()
-                .on('pointerover',()=>this.sound.play('menu_hover'))
-                .on('pointerdown',()=>{
-                    this.sound.play('menu_click');
-                    this.scene.start('SelectScene');
-                });
-
-            this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',optionStyle)
-                .setOrigin(0.5)
-                .setInteractive()
-                .on('pointerover',()=>this.sound.play('menu_hover'))
-                .on('pointerdown',()=>{
-                    this.sound.play('menu_click');
-                    window.Telegram?.WebApp?.close();
-                });
-
-            this.tweens.add({
-                targets:[this.playBtn,this.exitBtn],
-                scale:1.1,
-                duration:600,
-                yoyo:true,
-                repeat:-1,
-                ease:'Sine.easeInOut'
+        // Кнопка PLAY
+        this.playBtn = this.add.text(width/2, height/2, 'PLAY', optionStyle)
+            .setOrigin(0.5)
+            .setInteractive()
+            .on('pointerover', () => this.sound.play('menu_hover'))
+            .on('pointerdown', () => {
+                this.sound.play('menu_click');
+                this.scene.start('SelectScene');
             });
+
+        // Кнопка EXIT
+        this.exitBtn = this.add.text(width/2, height/2 + 100, 'EXIT', optionStyle)
+            .setOrigin(0.5)
+            .setInteractive()
+            .on('pointerover', () => this.sound.play('menu_hover'))
+            .on('pointerdown', () => {
+                this.sound.play('menu_click');
+                window.Telegram?.WebApp?.close();
+            });
+
+        // Анімація кнопок
+        this.tweens.add({
+            targets:[this.playBtn,this.exitBtn],
+            scale:1.1,
+            duration:600,
+            yoyo:true,
+            repeat:-1,
+            ease:'Sine.easeInOut'
         });
     }
+
     update(){
+        // Паралакс
         this.bgFar.tilePositionX += 0.2;
         this.bgMid.tilePositionX += 0.5;
         this.bgNear.tilePositionX += 1;
     }
 }
+
 
 /* =========================================================
    SELECT SCENE
