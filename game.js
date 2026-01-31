@@ -255,29 +255,21 @@ class GameScene extends Phaser.Scene {
     constructor(){ super('GameScene'); }
 
     preload(){
-        // Backgrounds
         this.load.image('bg_far','assets/backgrounds/bg_far.png');
         this.load.image('bg_mid','assets/backgrounds/bg_mid.png');
         this.load.image('bg_near','assets/backgrounds/bg_near.png');
 
-        // Player + Enemy
         this.load.spritesheet('player1','assets/player1.png',{ frameWidth:48, frameHeight:48 });
         this.load.spritesheet('player2','assets/player2.png',{ frameWidth:48, frameHeight:48 });
         this.load.spritesheet('enemy','assets/enemy.png',{ frameWidth:48, frameHeight:48 });
 
-        // Tiles
         this.load.image('ground','assets/tiles/ground.png');
         this.load.image('platform','assets/tiles/platform.png');
         this.load.image('platform_move','assets/tiles/platform_move.png');
 
-        // Hearts
         this.load.image('heart_big','assets/items/heart_big.png');
         this.load.image('heart_small','assets/items/heart_small.png');
 
-        // UI
-        this.load.image('heart_ui','assets/ui/heart_ui.png');
-
-        // Sounds
         this.load.audio('jump','assets/sounds/jump.mp3');
         this.load.audio('step','assets/sounds/walk.mp3');
         this.load.audio('heart_pick','assets/sounds/collect.mp3');
@@ -288,23 +280,18 @@ class GameScene extends Phaser.Scene {
     create(data){
         const { width, height } = this.scale;
 
-        // Backgrounds
         this.bg_far = this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0).setScrollFactor(0);
         this.bg_mid = this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0).setScrollFactor(0.3);
         this.bg_near = this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0).setScrollFactor(0.6);
 
-        // Physics world
         this.physics.world.setBounds(0,0,3000,height);
 
-        // Platforms
         this.platforms = this.physics.add.staticGroup();
 
-        // Ground (bottom)
         for(let x=0;x<3000;x+=128){
             this.platforms.create(x, height-32, 'ground').setOrigin(0,0).refreshBody();
         }
 
-        // Static platforms bottom/middle/top
         const staticPositions = [
             {x:300,y:500},{x:500,y:400},{x:700,y:550},
             {x:900,y:350},{x:1100,y:450},{x:1300,y:300},
@@ -316,7 +303,6 @@ class GameScene extends Phaser.Scene {
             this.platforms.create(p.x,p.y,'platform').setOrigin(0,0).refreshBody();
         });
 
-        // Moving platforms (5 of 20, not near)
         this.movingPlatforms = this.physics.add.group({ allowGravity:false, immovable:true });
 
         const movingPositions = [
@@ -336,27 +322,21 @@ class GameScene extends Phaser.Scene {
             plat.body.immovable = true;
         });
 
-        // Player
         const playerKey = data.player || selectedPlayer;
         this.player = this.physics.add.sprite(100, height-100, playerKey);
         this.player.setCollideWorldBounds(true);
         this.player.body.setSize(28,40).setOffset(10,8);
 
-        // Camera
         this.cameras.main.setBounds(0,0,3000,height);
         this.cameras.main.startFollow(this.player,true,0.08,0.08);
 
-        // Animations
         this.createAnimations(playerKey);
 
-        // Input
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        // Colliders
         this.physics.add.collider(this.player, this.platforms);
         this.physics.add.collider(this.player, this.movingPlatforms);
 
-        // Enemies
         this.enemies = this.physics.add.group();
 
         const enemyPositions = [
@@ -378,10 +358,8 @@ class GameScene extends Phaser.Scene {
 
         this.physics.add.collider(this.enemies, this.platforms);
         this.physics.add.collider(this.enemies, this.movingPlatforms);
-
         this.physics.add.collider(this.player, this.enemies, this.handlePlayerEnemy, null, this);
 
-        // Big hearts (25)
         this.bigHearts = this.physics.add.group({ allowGravity:false, immovable:true });
 
         for(let i=0;i<25;i++){
@@ -392,19 +370,15 @@ class GameScene extends Phaser.Scene {
 
         this.physics.add.overlap(this.player, this.bigHearts, this.collectBigHeart, null, this);
 
-        // Small hearts (from enemies)
         this.smallHearts = this.physics.add.group({ allowGravity:true });
-
         this.physics.add.overlap(this.player, this.smallHearts, this.collectSmallHeart, null, this);
 
-        // UI
         this.hp = 5;
         this.collectedHearts = 0;
 
         this.hpText = this.add.text(20,20,'HP: 5',{ fontFamily:'Arial', fontSize:'20px', fill:'#fff' }).setScrollFactor(0);
         this.heartText = this.add.text(20,50,'Hearts: 0/25',{ fontFamily:'Arial', fontSize:'20px', fill:'#fff' }).setScrollFactor(0);
 
-        // Sounds
         this.jumpSound = this.sound.add('jump');
         this.stepSound = this.sound.add('step',{ loop:true, volume:0.4 });
         this.heartSound = this.sound.add('heart_pick');
@@ -413,7 +387,6 @@ class GameScene extends Phaser.Scene {
     }
 
     createAnimations(playerKey){
-        // Player
         this.anims.create({
             key: 'player_idle',
             frames: this.anims.generateFrameNumbers(playerKey,{ start:0, end:3 }),
@@ -434,7 +407,6 @@ class GameScene extends Phaser.Scene {
             frameRate: 1
         });
 
-        // Enemy
         this.anims.create({
             key: 'enemy_walk',
             frames: this.anims.generateFrameNumbers('enemy',{ start:0, end:5 }),
@@ -446,20 +418,16 @@ class GameScene extends Phaser.Scene {
     handlePlayerEnemy(player, enemy){
         if(!enemy.alive) return;
 
-        // Player above enemy
         if(player.body.velocity.y > 0 && player.y < enemy.y){
             enemy.alive = false;
             enemy.disableBody(true,true);
             this.enemyDieSound.play();
 
-            // Bounce player
             player.setVelocityY(-300);
 
-            // Drop small heart
             const heart = this.smallHearts.create(enemy.x, enemy.y-20, 'heart_small');
             heart.setBounce(0.4);
         } else {
-            // Player hit
             this.hp--;
             this.hitSound.play();
             this.hpText.setText('HP: ' + this.hp);
@@ -494,12 +462,10 @@ class GameScene extends Phaser.Scene {
     }
 
     update(time, delta){
-        // Background parallax
         this.bg_far.tilePositionX = this.cameras.main.scrollX * 0.1;
         this.bg_mid.tilePositionX = this.cameras.main.scrollX * 0.3;
         this.bg_near.tilePositionX = this.cameras.main.scrollX * 0.6;
 
-        // Player movement
         const onGround = this.player.body.blocked.down;
 
         if(this.cursors.left.isDown){
@@ -535,7 +501,6 @@ class GameScene extends Phaser.Scene {
             this.player.anims.play('player_jump', true);
         }
 
-        // Moving platforms logic
         this.movingPlatforms.children.iterate(plat=>{
             plat.y += plat.speed * delta / 1000;
             if(plat.y > plat.startY + plat.range || plat.y < plat.startY - plat.range){
@@ -544,7 +509,6 @@ class GameScene extends Phaser.Scene {
             plat.body.updateFromGameObject();
         });
 
-        // Enemy patrol logic
         this.enemies.children.iterate(enemy=>{
             if(!enemy.alive) return;
 
@@ -552,27 +516,28 @@ class GameScene extends Phaser.Scene {
             enemy.anims.play('enemy_walk', true);
             enemy.setFlipX(enemy.direction < 0);
 
-            // Turn at world edges
             if(enemy.body.blocked.left || enemy.body.blocked.right){
                 enemy.direction *= -1;
             }
 
-            // Turn at platform edges
             const aheadX = enemy.x + enemy.direction * 20;
             const aheadY = enemy.y + 40;
-            const tileBelow = this.platforms.getChildren().some(p=>{
-                return Phaser.Geom.Intersects.RectangleToRectangle(
-                    p.getBounds(),
-                    new Phaser.Geom.Rectangle(aheadX, aheadY, 2, 2)
-                );
+            let groundAhead = false;
+
+            this.platforms.getChildren().forEach(p=>{
+                const bounds = p.getBounds();
+                if(bounds.contains(aheadX, aheadY)){
+                    groundAhead = true;
+                }
             });
 
-            if(!tileBelow){
+            if(!groundAhead){
                 enemy.direction *= -1;
             }
         });
     }
 }
+
 
 /* =========================================================
    WIN / LOSE SCENES
