@@ -89,6 +89,7 @@ class MenuScene extends Phaser.Scene {
 ========================================================= */
 class SelectScene extends Phaser.Scene {
     constructor(){ super('SelectScene'); }
+
     preload(){
         this.load.image('bg_far','assets/backgrounds/bg_far.png');
         this.load.image('bg_mid','assets/backgrounds/bg_mid.png');
@@ -100,47 +101,49 @@ class SelectScene extends Phaser.Scene {
         this.load.audio('menu_hover','assets/sounds/hover.mp3');
         this.load.audio('menu_click','assets/sounds/collect.mp3');
     }
+
     create(){
         const {width,height} = this.scale;
+        // Фони
         this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
         this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
         this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
-        document.fonts.ready.then(()=>{
-            const titleStyle = { fontFamily:'UnifrakturCook', fontSize:'64px', fill:'#e8d9b0' };
-            this.add.text(width/2,120,'Select Character', titleStyle).setOrigin(0.5);
+        const titleStyle = { fontFamily:'UnifrakturCook, Arial', fontSize:'64px', fill:'#e8d9b0' };
+        this.add.text(width/2,120,'Select Character', titleStyle).setOrigin(0.5);
 
-            const y = height/2 + 120;
-            this.add.image(width/2-220,y,'platform');
-            this.add.image(width/2+220,y,'platform');
+        const y = height/2 + 120;
+        this.add.image(width/2-220,y,'platform');
+        this.add.image(width/2+220,y,'platform');
 
-            const p1=this.add.image(width/2-220,y-110,'player1_idle')
-                .setInteractive()
-                .on('pointerover',()=>this.sound.play('menu_hover'))
-                .on('pointerdown',()=>{
-                    this.sound.play('menu_click');
-                    this.scene.start('GameScene',{player:'player1'});
-                });
-
-            const p2=this.add.image(width/2+220,y-110,'player2_idle')
-                .setInteractive()
-                .on('pointerover',()=>this.sound.play('menu_hover'))
-                .on('pointerdown',()=>{
-                    this.sound.play('menu_click');
-                    this.scene.start('GameScene',{player:'player2'});
-                });
-
-            this.tweens.add({
-                targets:[p1,p2],
-                scale:1.1,
-                duration:600,
-                yoyo:true,
-                repeat:-1,
-                ease:'Sine.easeInOut'
+        const p1 = this.add.image(width/2-220,y-110,'player1_idle')
+            .setInteractive()
+            .on('pointerover', ()=>this.sound.play('menu_hover'))
+            .on('pointerdown', ()=>{
+                this.sound.play('menu_click');
+                this.scene.start('GameScene',{player:'player1'});
             });
+
+        const p2 = this.add.image(width/2+220,y-110,'player2_idle')
+            .setInteractive()
+            .on('pointerover', ()=>this.sound.play('menu_hover'))
+            .on('pointerdown', ()=>{
+                this.sound.play('menu_click');
+                this.scene.start('GameScene',{player:'player2'});
+            });
+
+        // Анімація персонажів
+        this.tweens.add({
+            targets:[p1,p2],
+            scale:1.1,
+            duration:600,
+            yoyo:true,
+            repeat:-1,
+            ease:'Sine.easeInOut'
         });
     }
 }
+
 
 /* =========================================================
    PLAYER
@@ -531,41 +534,46 @@ class EndScene extends Phaser.Scene {
     }
 
     create(){
-        const {width,height}=this.scale;
-        document.fonts.ready.then(()=>{
-            const style={ fontFamily:'UnifrakturCook', fontSize:'56px', fill:'#e8d9b0' };
-            this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
-            this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
-            this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
-            this.add.text(width/2,height/3,this.label,{fontFamily:'UnifrakturCook', fontSize:'96px', fill:'#e8d9b0'}).setOrigin(0.5);
+        const {width,height} = this.scale;
 
-            this.playBtn = this.add.text(width/2,height/2,'PLAY',style).setOrigin(0.5)
-                .setInteractive()
-                .on('pointerover',()=>this.sound.play('menu_hover'))
-                .on('pointerdown',()=>{
-                    this.sound.play('menu_click');
-                    this.scene.start('GameScene',{player:this.data.player});
-                });
+        // Фони
+        this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
+        this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
+        this.add.tileSprite(0,0,width,height,'bg_near').setOrigin(0);
 
-            this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',style).setOrigin(0.5)
-                .setInteractive()
-                .on('pointerover',()=>this.sound.play('menu_hover'))
-                .on('pointerdown',()=>{
-                    this.sound.play('menu_click');
-                    this.scene.start('MenuScene');
-                });
+        const style = { fontFamily:'UnifrakturCook, Arial', fontSize:'56px', fill:'#e8d9b0' };
+        this.add.text(width/2,height/3,this.label,{fontFamily:'UnifrakturCook, Arial', fontSize:'96px', fill:'#e8d9b0'}).setOrigin(0.5);
 
-            this.tweens.add({targets:[this.playBtn,this.exitBtn],scale:1.1,duration:600,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
-        });
+        // Кнопка PLAY
+        this.playBtn = this.add.text(width/2,height/2,'PLAY',style).setOrigin(0.5)
+            .setInteractive()
+            .on('pointerover',()=>this.sound.play('menu_hover'))
+            .on('pointerdown',()=>{
+                this.sound.play('menu_click');
+                this.scene.start('GameScene',{player:this.data.player});
+            });
+
+        // Кнопка EXIT
+        this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',style).setOrigin(0.5)
+            .setInteractive()
+            .on('pointerover',()=>this.sound.play('menu_hover'))
+            .on('pointerdown',()=>{
+                this.sound.play('menu_click');
+                this.scene.start('MenuScene');
+            });
+
+        // Анімація кнопок
+        this.tweens.add({targets:[this.playBtn,this.exitBtn],scale:1.1,duration:600,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
     }
 }
 
 class WinScene extends EndScene { 
-    constructor(){ super(); this.label='YOU WIN 🏆'; this.sceneKey='WinScene'; } 
+    constructor(){ super(); this.label='YOU WIN 🏆'; } 
 }
 class LoseScene extends EndScene { 
-    constructor(){ super(); this.label='GAME OVER 💀'; this.sceneKey='LoseScene'; } 
+    constructor(){ super(); this.label='GAME OVER 💀'; } 
 }
+
 
 /* =========================================================
    CONFIG
