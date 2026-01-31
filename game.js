@@ -10,6 +10,11 @@ if (window.Telegram && window.Telegram.WebApp) {
 }
 
 /* =========================================================
+   GLOBAL
+========================================================= */
+let selectedPlayer = 'player1';
+
+/* =========================================================
    MENU SCENE
 ========================================================= */
 class MenuScene extends Phaser.Scene {
@@ -37,7 +42,7 @@ class MenuScene extends Phaser.Scene {
         const exit=this.add.text(width/2,height/2+100,'EXIT',btnStyle).setOrigin(0.5).setInteractive();
 
         play.on('pointerdown',()=>this.scene.start('SelectScene'));
-        exit.on('pointerdown',()=>tg?.close());
+        exit.on('pointerdown',()=>tg?.close?.());
 
         this.tweens.add({targets:[play,exit],scale:1.1,duration:600,yoyo:true,repeat:-1});
     }
@@ -113,6 +118,10 @@ class Player extends Phaser.Physics.Arcade.Sprite {
             left:'A',right:'D',up:'W',
             left2:'LEFT',right2:'RIGHT',up2:'UP'
         });
+
+        this.moveLeft=false;
+        this.moveRight=false;
+        this.jump=false;
     }
 
     takeHit(fromX){
@@ -139,8 +148,8 @@ class Player extends Phaser.Physics.Arcade.Sprite {
     preUpdate(t,d){
         super.preUpdate(t,d);
 
-        const left=this.keys.left.isDown||this.keys.left2.isDown;
-        const right=this.keys.right.isDown||this.keys.right2.isDown;
+        const left=this.keys.left.isDown||this.keys.left2.isDown||this.moveLeft;
+        const right=this.keys.right.isDown||this.keys.right2.isDown||this.moveRight;
 
         if(left){
             this.setVelocityX(-this.speed);
@@ -152,7 +161,7 @@ class Player extends Phaser.Physics.Arcade.Sprite {
             this.setVelocityX(0);
         }
 
-        if((Phaser.Input.Keyboard.JustDown(this.keys.up)||Phaser.Input.Keyboard.JustDown(this.keys.up2))
+        if(((Phaser.Input.Keyboard.JustDown(this.keys.up)||Phaser.Input.Keyboard.JustDown(this.keys.up2))||this.jump)
             && this.jumpCount<this.maxJumps){
             this.setVelocityY(-this.jumpVelocity);
             this.jumpCount++;
@@ -253,9 +262,20 @@ class GameScene extends Phaser.Scene {
         for(let i=0;i<this.worldWidth/gW;i++)
             this.ground.create(i*gW+gW/2,this.worldHeight,'ground').setOrigin(0.5,1).refreshBody();
 
+        /* PLATFORMS */
+        this.platforms=this.physics.add.staticGroup();
+        let x=500;
+        for(let i=0;i<20;i++){
+            const y=Phaser.Math.Between(260,380);
+            const pf=this.platforms.create(x,y,`pf${Phaser.Math.Between(1,4)}`);
+            pf.refreshBody();
+            x+=Phaser.Math.Between(280,340);
+        }
+
         /* PLAYER */
         this.player=new Player(this,200,620,`${this.selectedPlayer}_idle`);
         this.physics.add.collider(this.player,this.ground);
+        this.physics.add.collider(this.player,this.platforms);
 
         /* HEARTS */
         this.hearts=this.physics.add.staticGroup();
@@ -273,7 +293,7 @@ class GameScene extends Phaser.Scene {
             h.destroy();
             this.heartsCollected++;
             if(this.heartsCollected>=this.totalHearts){
-                this.scene.start('WinScene');
+                this.scene.start('WinScene',{player:this.selectedPlayer});
             }
         });
 
@@ -283,6 +303,7 @@ class GameScene extends Phaser.Scene {
             this.enemies.add(new Enemy(this,800+i*900,620,this.enemyType));
 
         this.physics.add.collider(this.enemies,this.ground);
+        this.physics.add.collider(this.enemies,this.platforms);
 
         this.physics.add.collider(this.player,this.enemies,(p,e)=>{
             if(!e.active||e.isDead) return;
@@ -298,6 +319,10 @@ class GameScene extends Phaser.Scene {
 
         this.cameras.main.startFollow(this.player,true,0.1,0.1);
         this.cameras.main.setBounds(0,0,this.worldWidth,this.worldHeight);
+
+        if(this.sys.game.device.os.android || this.sys.game.device.os.iOS){
+            this.createMobileButtons();
+        }
     }
 
     update(){
@@ -316,8 +341,25 @@ class GameScene extends Phaser.Scene {
         if(this.hp<=0) return;
         this.hp--;
         if(this.hp<=0){
-            this.scene.start('LoseScene');
+            this.scene.start('LoseScene',{player:this.selectedPlayer});
         }
+    }
+
+    createMobileButtons(){
+        const left=this.add.dom(20,this.scale.height-80,'div','class=button','◀').setOrigin(0);
+        const right=this.add.dom(100,this.scale.height-80,'div','class=button','▶').setOrigin(0);
+        const jump=this.add.dom(this.scale.width-80,this.scale.height-80,'div','class=button','▲').setOrigin(0);
+
+        [left,right,jump].forEach(btn=>this.tweens.add({targets:btn,scale:1.1,duration:600,yoyo:true,repeat:-1}));
+
+        left.addListener('pointerdown'); left.on('pointerdown',()=>this.player.moveLeft=true);
+        left.addListener('pointerup'); left.on('pointerup',()=>this.player.moveLeft=false);
+
+        right.addListener('pointerdown'); right.on('pointerdown',()=>this.player.moveRight=true);
+        right.addListener('pointerup'); right.on('pointerup',()=>this.player.moveRight=false);
+
+        jump.addListener('pointerdown'); jump.on('pointerdown',()=>this.player.jump=true);
+        jump.addListener('pointerup'); jump.on('pointerup',()=>this.player.jump=false);
     }
 }
 
@@ -327,7 +369,7 @@ class GameScene extends Phaser.Scene {
 class WinScene extends Phaser.Scene {
     constructor(){ super('WinScene'); }
 
-    create(){
+    create(data){
         const {width,height}=this.scale;
         this.bgFar=this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
         this.bgMid=this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
@@ -353,7 +395,7 @@ class WinScene extends Phaser.Scene {
 class LoseScene extends Phaser.Scene {
     constructor(){ super('LoseScene'); }
 
-    create(){
+    create(data){
         const {width,height}=this.scale;
         this.bgFar=this.add.tileSprite(0,0,width,height,'bg_far').setOrigin(0);
         this.bgMid=this.add.tileSprite(0,0,width,height,'bg_mid').setOrigin(0);
