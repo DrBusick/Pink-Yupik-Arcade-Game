@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+
 <meta
   name="viewport"
   content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
@@ -17,31 +18,46 @@
   font-style: normal;
 }
 
+/* IMPORTANT: Phaser reads computed styles */
 html, body {
   margin: 0;
   padding: 0;
-  background: black;
   width: 100%;
   height: 100%;
+  background: #000;
   overflow: hidden;
   font-family: 'UnifrakturCook', serif;
 }
 
+/* Prevent blur / scaling issues */
 canvas {
   display: block;
   margin: 0 auto;
+  image-rendering: pixelated;
 }
 </style>
 </head>
+
 <body>
 
 <!-- PHASER -->
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
 
+<!-- PRELOAD FONT FOR PHASER -->
+<script>
+/*
+  This guarantees the font is loaded BEFORE Phaser scenes use it.
+  Without this, text may render with fallback font or cause black screen.
+*/
+document.fonts.load("32px UnifrakturCook").then(() => {
+  document.fonts.ready = Promise.resolve();
+});
+</script>
+
 <!-- TELEGRAM MINI APP INIT -->
 <script>
 if (window.Telegram && window.Telegram.WebApp) {
-    const tg = window.Telegram.WebApp;
+    window.tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
     tg.disableVerticalSwipes();
