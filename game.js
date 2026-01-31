@@ -151,6 +151,7 @@ class Player extends Phaser.Physics.Arcade.Sprite {
             left2:'LEFT', right2:'RIGHT', up2:'UP'
         });
         this.moveLeft=false; this.moveRight=false; this.jump=false;
+        this.touchLeft=false; this.touchRight=false; this.touchJump=false;
         this.scene=scene;
         this.invulnerable=false;
         this.stepTimer=0;
@@ -180,32 +181,33 @@ class Player extends Phaser.Physics.Arcade.Sprite {
     preUpdate(t,d){
         super.preUpdate(t,d);
 
-        const l=this.keys.left.isDown||this.keys.left2.isDown||this.moveLeft;
-        const r=this.keys.right.isDown||this.keys.right2.isDown||this.moveRight;
+        const l = this.keys.left.isDown || this.keys.left2.isDown || this.moveLeft || this.touchLeft;
+        const r = this.keys.right.isDown || this.keys.right2.isDown || this.moveRight || this.touchRight;
+        const j = (Phaser.Input.Keyboard.JustDown(this.keys.up) || Phaser.Input.Keyboard.JustDown(this.keys.up2) || this.jump || this.touchJump);
 
         if(l) this.setAccelerationX(-this.accel);
         else if(r) this.setAccelerationX(this.accel);
         else this.setAccelerationX(0);
 
-        if(((Phaser.Input.Keyboard.JustDown(this.keys.up)||Phaser.Input.Keyboard.JustDown(this.keys.up2))||this.jump)
-           && this.jumpCount<this.maxJumps){
+        if(j && this.jumpCount<this.maxJumps){
             this.setVelocityY(-this.jumpVelocity);
             this.jumpCount++;
             this.scene.sound.play('jump');
         }
 
         if(this.body.blocked.down) this.jumpCount=0;
+
         if(l) this.setFlipX(true);
         else if(r) this.setFlipX(false);
 
-        if(Math.abs(this.body.velocity.x)>5){
-            this.anims.play('walk',true);
-            if(this.body.blocked.down && t>this.stepTimer){
+        if(Math.abs(this.body.velocity.x) > 5){
+            this.anims.play('walk', true);
+            if(this.body.blocked.down && t > this.stepTimer){
                 this.scene.sound.play('step',{volume:0.5});
-                this.stepTimer=t+350;
+                this.stepTimer = t + 350;
             }
         } else {
-            this.anims.play('idle',true);
+            this.anims.play('idle', true);
         }
     }
 }
@@ -276,9 +278,9 @@ class GameScene extends Phaser.Scene {
         for(let i=1;i<=4;i++) this.load.image(`pf${i}`,'assets/platforms/platform_'+i+'.png');
         this.load.image('heart_collect','assets/items/heart_v4.png');
         this.load.image('heart_small','assets/items/heart_small.png');
-this.load.image('btn_left',  'assets/ui/btn_left.png');
-this.load.image('btn_right', 'assets/ui/btn_right.png');
-this.load.image('btn_jump',  'assets/ui/btn_jump.png');
+        this.load.image('btn_left',  'assets/ui/btn_left.png');
+        this.load.image('btn_right', 'assets/ui/btn_right.png');
+        this.load.image('btn_jump',  'assets/ui/btn_jump.png');
         this.load.audio('jump','assets/sounds/jump.mp3');
         this.load.audio('step','assets/sounds/walk.mp3');
         this.load.audio('heart_pick','assets/sounds/collect.mp3');
@@ -296,28 +298,23 @@ this.load.image('btn_jump',  'assets/ui/btn_jump.png');
         this.physics.world.setBounds(0,0,this.worldWidth,this.worldHeight);
         this.bg=this.add.tileSprite(0,0,this.worldWidth,832,'bg').setOrigin(0);
 
-        // GROUND
         this.ground=this.physics.add.staticGroup();
         const gW=this.textures.get('ground').getSourceImage().width;
         for(let i=0;i<this.worldWidth/gW;i++)
             this.ground.create(i*gW+gW/2,this.worldHeight,'ground').setOrigin(0.5,1).refreshBody();
 
-        // PLATFORMS
         this.platforms=this.physics.add.staticGroup();
         this.movingPlatforms=this.physics.add.group({allowGravity:false,immovable:true});
         this.spawnPlatforms();
 
-        // PLAYER
         this.player=new Player(this,200,620,`${this.selectedPlayer}_idle`);
         this.physics.add.collider(this.player,this.ground);
         this.physics.add.collider(this.player,this.platforms);
         this.physics.add.collider(this.player,this.movingPlatforms);
 
-        // CAMERA
         this.cameras.main.startFollow(this.player,true,0.12,0.12);
         this.cameras.main.setBounds(0,0,this.worldWidth,this.worldHeight);
 
-        // UI
         document.fonts.ready.then(()=>{
             this.hpIcons=[];
             for(let i=0;i<this.maxHP;i++)
@@ -328,7 +325,6 @@ this.load.image('btn_jump',  'assets/ui/btn_jump.png');
             }).setScrollFactor(0);
         });
 
-        // HEARTS
         this.hearts = this.physics.add.staticGroup();
         this.spawnHearts(this.totalHearts);
         this.physics.add.overlap(this.player,this.hearts,(p,h)=>{
@@ -336,12 +332,9 @@ this.load.image('btn_jump',  'assets/ui/btn_jump.png');
             this.heartsCollected++;
             this.sound.play('heart_pick');
             this.heartText.setText(`❤️ ${this.heartsCollected} / ${this.totalHearts}`);
-            if(this.heartsCollected>=this.totalHearts){
-                this.showWinText();
-            }
+            if(this.heartsCollected>=this.totalHearts) this.showWinText();
         });
 
-        // ENEMIES
         this.enemies = this.physics.add.group();
         for(let i=0;i<5;i++)
             this.enemies.add(new Enemy(this,800+i*900,620,this.enemyType));
@@ -349,7 +342,7 @@ this.load.image('btn_jump',  'assets/ui/btn_jump.png');
         this.physics.add.collider(this.enemies,this.platforms);
 
         this.physics.add.collider(this.player,this.enemies,(p,e)=>{
-            if(!e.isDead && p.body.velocity.y>0 && p.y<e.y-10){
+            if(!e.isDead && p.body.velocity.y>0 && p.body.bottom < e.body.top + 30){
                 e.die();
                 p.setVelocityY(-350);
             } else if(!e.isDead){
@@ -359,7 +352,7 @@ this.load.image('btn_jump',  'assets/ui/btn_jump.png');
         });
 
         if(this.sys.game.device.os.android || this.sys.game.device.os.iOS){
-            this.createMobileButtons();
+            this.createTouchControls();
         }
     }
 
@@ -383,7 +376,9 @@ this.load.image('btn_jump',  'assets/ui/btn_jump.png');
                     if(e.body.blocked.down) e.setVelocityY(-this.player.jumpVelocity*0.7);
                 }
             } else if(platBelow){
-                if(e.x < platBelow.x - platBelow.displayWidth/2 || e.x > platBelow.x + platBelow.displayWidth/2){
+                const leftEdge = platBelow.x - platBelow.displayWidth/2;
+                const rightEdge = platBelow.x + platBelow.displayWidth/2;
+                if(e.x < leftEdge || e.x > rightEdge){
                     e.direction*=-1;
                     e.setFlipX(e.direction<0);
                 }
@@ -391,7 +386,7 @@ this.load.image('btn_jump',  'assets/ui/btn_jump.png');
             }
 
             if(platBelow && platBelow.isMoving)
-                e.y += platBelow.speed * platBelow.direction * (1/60);
+                e.x += platBelow.speed * platBelow.direction * (1/60);
 
             if(Math.abs(e.body.velocity.x)>5)
                 e.anims.play(`${e.type}_walk`,true);
@@ -440,6 +435,7 @@ this.load.image('btn_jump',  'assets/ui/btn_jump.png');
             let x,y,overlap;
             do{
                 x=Phaser.Math.Between(80,this.worldWidth-80);
+               
                 y=Phaser.Math.Between(100,this.worldHeight-200);
                 overlap = plats.some(pl=>{
                     const b=pl.getBounds();
@@ -462,70 +458,71 @@ this.load.image('btn_jump',  'assets/ui/btn_jump.png');
     }
 
     createTouchControls() {
-    const { width, height } = this.scale;
+        const { width, height } = this.scale;
 
-    const scaleIdle = 0.9;
-    const scaleDown = 0.8;
+        const scaleIdle = 0.9;
+        const scaleDown = 0.8;
 
-    const makeBtn = (x, y, key) => {
-    const btn = this.add.image(x, y, key)
-        .setScrollFactor(0)
-        .setDepth(9999)
-        .setScale(scaleIdle)
-        .setAlpha(0.55)
-        .setInteractive({ pointerDownOutside: true });
+        const makeBtn = (x, y, key) => {
+            const btn = this.add.image(x, y, key)
+                .setScrollFactor(0)
+                .setDepth(9999)
+                .setScale(scaleIdle)
+                .setAlpha(0.55)
+                .setInteractive({ pointerDownOutside: true });
 
-    btn.on('pointerdown', () => {
-        btn.setScale(scaleDown);
-        btn.setAlpha(0.85);
-    });
+            btn.on('pointerdown', () => {
+                btn.setScale(scaleDown);
+                btn.setAlpha(0.85);
+            });
 
-    btn.on('pointerup', () => {
-        btn.setScale(scaleIdle);
-        btn.setAlpha(0.55);
-    });
+            btn.on('pointerup', () => {
+                btn.setScale(scaleIdle);
+                btn.setAlpha(0.55);
+            });
 
-    btn.on('pointerout', () => {
-        btn.setScale(scaleIdle);
-        btn.setAlpha(0.55);
-    });
+            btn.on('pointerout', () => {
+                btn.setScale(scaleIdle);
+                btn.setAlpha(0.55);
+            });
 
-    return btn;
-};
+            return btn;
+        };
 
+        const left = makeBtn(130, height - 120, 'btn_left');
+        left.on('pointerdown', () => this.player.touchLeft = true);
+        left.on('pointerup',   () => this.player.touchLeft = false);
+        left.on('pointerout',  () => this.player.touchLeft = false);
 
-    const left = makeBtn(130, height - 120, 'btn_left');
-    left.on('pointerdown', () => this.player.touchLeft = true);
-    left.on('pointerup',   () => this.player.touchLeft = false);
-    left.on('pointerout',  () => this.player.touchLeft = false);
+        const right = makeBtn(260, height - 120, 'btn_right');
+        right.on('pointerdown', () => this.player.touchRight = true);
+        right.on('pointerup',   () => this.player.touchRight = false);
+        right.on('pointerout',  () => this.player.touchRight = false);
 
-    const right = makeBtn(260, height - 120, 'btn_right');
-    right.on('pointerdown', () => this.player.touchRight = true);
-    right.on('pointerup',   () => this.player.touchRight = false);
-    right.on('pointerout',  () => this.player.touchRight = false);
-
-    const jump = makeBtn(width - 140, height - 120, 'btn_jump');
-jump.on('pointerdown', () => this.player.touchJump = true);
-jump.on('pointerup',   () => this.player.touchJump = false);
-jump.on('pointerout',  () => this.player.touchJump = false);
-
+        const jump = makeBtn(width - 140, height - 120, 'btn_jump');
+        jump.on('pointerdown', () => this.player.touchJump = true);
+        jump.on('pointerup',   () => this.player.touchJump = false);
+        jump.on('pointerout',  () => this.player.touchJump = false);
+    }
 }
-
 
 /* =========================================================
    WIN / LOSE SCENES
 ========================================================= */
 class EndScene extends Phaser.Scene {
-    constructor(key,text){ super(key); this.label=text; }
+    constructor() { super(); this.label=''; }
+    
+    init(data){ this.data = data; }
+
     preload(){
         this.load.image('bg_far','assets/backgrounds/bg_far.png');
         this.load.image('bg_mid','assets/backgrounds/bg_mid.png');
         this.load.image('bg_near','assets/backgrounds/bg_near.png');
-
         this.load.audio('menu_hover','assets/sounds/hover.mp3');
         this.load.audio('menu_click','assets/sounds/collect.mp3');
     }
-    create(data){
+
+    create(){
         const {width,height}=this.scale;
         document.fonts.ready.then(()=>{
             const style={ fontFamily:'UnifrakturCook', fontSize:'56px', fill:'#e8d9b0' };
@@ -539,7 +536,7 @@ class EndScene extends Phaser.Scene {
                 .on('pointerover',()=>this.sound.play('menu_hover'))
                 .on('pointerdown',()=>{
                     this.sound.play('menu_click');
-                    this.scene.start('GameScene',{player:data.player});
+                    this.scene.start('GameScene',{player:this.data.player});
                 });
 
             this.exitBtn = this.add.text(width/2,height/2+100,'EXIT',style).setOrigin(0.5)
@@ -555,8 +552,12 @@ class EndScene extends Phaser.Scene {
     }
 }
 
-class WinScene extends EndScene { constructor(){ super('WinScene','YOU WIN 🏆'); } }
-class LoseScene extends EndScene { constructor(){ super('LoseScene','GAME OVER 💀'); } }
+class WinScene extends EndScene { 
+    constructor(){ super(); this.label='YOU WIN 🏆'; this.sceneKey='WinScene'; } 
+}
+class LoseScene extends EndScene { 
+    constructor(){ super(); this.label='GAME OVER 💀'; this.sceneKey='LoseScene'; } 
+}
 
 /* =========================================================
    CONFIG
