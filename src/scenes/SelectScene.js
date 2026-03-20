@@ -45,9 +45,14 @@ export default class SelectScene extends Phaser.Scene {
         this.dragging = false;
         this.velocity = 0;
         this.prevPointerX = 0;
+        this.pointerDownX = 0;
+        this.wasDragging = false;
 
         this.friction = 0.95;
         this.minVelocity = 0.001;
+
+        // hover
+        this.hoveredIndex = -1;
 
         // створення спрайтів
         this.charSprites = [];
@@ -57,32 +62,64 @@ export default class SelectScene extends Phaser.Scene {
             this.charSprites.push(sprite);
         }
 
-        // drag input
+        // INPUT
+
         this.input.on('pointerdown', (pointer) => {
             this.dragging = true;
             this.prevPointerX = pointer.x;
+
+            this.pointerDownX = pointer.x;
+            this.wasDragging = false;
+
             this.velocity = 0;
         });
 
         this.input.on('pointermove', (pointer) => {
+            // hover визначення
+            let closestIndex = -1;
+            let minDist = 99999;
+
+            this.charSprites.forEach((sprite, i) => {
+                const dist = Phaser.Math.Distance.Between(pointer.x, pointer.y, sprite.x, sprite.y);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestIndex = i;
+                }
+            });
+
+            if (closestIndex !== this.hoveredIndex) {
+                this.hoveredIndex = closestIndex;
+
+                if (closestIndex !== -1) {
+                    this.sound.play('menu_hover', { volume: 0.3 });
+                }
+            }
+
             if (!this.dragging) return;
 
             const dx = pointer.x - this.prevPointerX;
             this.prevPointerX = pointer.x;
+
+            if (Math.abs(pointer.x - this.pointerDownX) > 10) {
+                this.wasDragging = true;
+            }
 
             const speed = 0.005;
 
             this.rotationAngle += dx * speed;
             this.velocity = dx * speed;
 
-            // обмеження швидкості
             this.velocity = Phaser.Math.Clamp(this.velocity, -0.1, 0.1);
 
             this.updateWheel(true);
         });
 
-        this.input.on('pointerup', () => {
+        this.input.on('pointerup', (pointer) => {
             this.dragging = false;
+
+            if (!this.wasDragging) {
+                this.handleClick(pointer);
+            }
         });
 
         this.updateWheel(true);
@@ -108,7 +145,7 @@ export default class SelectScene extends Phaser.Scene {
         let closestIndex = 0;
         let minDiff = Infinity;
 
-        // знаходимо центрального
+        // центр
         this.charSprites.forEach((sprite, i) => {
             const angle = this.rotationAngle + i * this.stepAngle;
             const diff = Math.abs(Math.cos(angle) - 1);
@@ -119,7 +156,6 @@ export default class SelectScene extends Phaser.Scene {
             }
         });
 
-        // позиціонування
         this.charSprites.forEach((sprite, i) => {
             const angle = this.rotationAngle + i * this.stepAngle;
 
@@ -128,8 +164,14 @@ export default class SelectScene extends Phaser.Scene {
 
             const depthFactor = (Math.cos(angle) + 1) / 2;
 
-            const scale = 0.5 + depthFactor * 0.8;
-            const alpha = 0.4 + depthFactor * 0.6;
+            let scale = 0.5 + depthFactor * 0.8;
+            let alpha = 0.4 + depthFactor * 0.6;
+
+            // hover ефект
+            if (i === this.hoveredIndex) {
+                scale *= 1.1;
+            }
+
             const depth = Math.floor(depthFactor * 100);
 
             if (instant) {
@@ -151,24 +193,7 @@ export default class SelectScene extends Phaser.Scene {
 
             sprite.setDepth(depth);
 
-            // активний персонаж
-            if (i === closestIndex) {
-                sprite.setInteractive();
-
-                sprite.removeAllListeners();
-                sprite.on('pointerdown', () => {
-                    const char = this.characters[i];
-
-                    if (char.unlocked) {
-                        this.sound.play('menu_click');
-                        this.scene.start('GameScene', { player: char.key });
-                    }
-                });
-            } else {
-                sprite.disableInteractive();
-            }
-
-            // glow для locked
+            // glow locked
             if (!this.characters[i].unlocked) {
                 sprite.setTint(0xffffaa);
                 sprite.setBlendMode(Phaser.BlendModes.ADD);
@@ -187,8 +212,46 @@ export default class SelectScene extends Phaser.Scene {
                 sprite.setBlendMode(Phaser.BlendModes.NORMAL);
             }
 
-            // легкий 3D tilt
+            // tilt
             sprite.setRotation(Math.sin(angle) * 0.25);
+        });
+    }
+
+    handleClick(pointer) {
+        let closestIndex = 0;
+        let minDist = Infinity;
+
+        this.charSprites.forEach((sprite, i) => {
+            const dist = Phaser.Math.Distance.Between(pointer.x, pointer.y, sprite.x, sprite.y);
+            if (dist < minDist) {
+                minDist = dist;
+                closestIndex = i;
+            }
+        });
+
+        const sprite = this.charSprites[closestIndex];
+        const char = this.characters[closestIndex];
+
+        if (!char.unlocked) return;
+
+        this.sound.play('menu_click');
+
+        // press ефект
+        this.tweens.add({
+            targets: sprite,
+            scale: sprite.scale * 1.2,
+            duration: 100,
+            yoyo: true,
+            ease: 'Quad.easeOut',
+            onComplete: () => {
+                this.scene.start('GameScene', { player: char.key });
+            }
+        });
+
+        // flash
+        sprite.setTint(0xffffcc);
+        this.time.delayedCall(150, () => {
+            sprite.clearTint();
         });
     }
 
