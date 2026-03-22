@@ -33,7 +33,6 @@ export default class SelectScene extends Phaser.Scene {
             { key: 'question', unlocked: false }
         ];
 
-        // wheel параметри
         this.radius = 250;
         this.centerX = width / 2;
         this.centerY = height / 2 + 50;
@@ -41,7 +40,6 @@ export default class SelectScene extends Phaser.Scene {
         this.rotationAngle = 0;
         this.stepAngle = (Math.PI * 2) / this.characters.length;
 
-        // drag + інерція
         this.dragging = false;
         this.velocity = 0;
         this.prevPointerX = 0;
@@ -51,18 +49,24 @@ export default class SelectScene extends Phaser.Scene {
         this.friction = 0.95;
         this.minVelocity = 0.001;
 
-        // hover
         this.hoveredIndex = -1;
-        this.centerIndex = 0; // центральний персонаж
+        this.centerIndex = 0;
 
-        // створення спрайтів
         this.charSprites = [];
+
         for (let i = 0; i < this.characters.length; i++) {
             const sprite = this.add.image(this.centerX, this.centerY, this.characters[i].key);
+
+            // 🔥 робимо клікабельним
+            sprite.setInteractive({ useHandCursor: true });
+
+            sprite.on('pointerdown', () => {
+                this.handleClick(i);
+            });
+
             this.charSprites.push(sprite);
         }
 
-        // INPUT
         this.input.on('pointerdown', (pointer) => {
             this.dragging = true;
             this.prevPointerX = pointer.x;
@@ -72,9 +76,9 @@ export default class SelectScene extends Phaser.Scene {
         });
 
         this.input.on('pointermove', (pointer) => {
-            // hover
             let closestIndex = -1;
             let minDist = 99999;
+
             this.charSprites.forEach((sprite, i) => {
                 const dist = Phaser.Math.Distance.Between(pointer.x, pointer.y, sprite.x, sprite.y);
                 if (dist < minDist) {
@@ -82,35 +86,27 @@ export default class SelectScene extends Phaser.Scene {
                     closestIndex = i;
                 }
             });
-            if (closestIndex !== this.hoveredIndex) {
-                this.hoveredIndex = closestIndex;
-                if (closestIndex !== -1) {
-                    this.sound.play('menu_hover', { volume: 0.3 });
-                }
-            }
+
+            this.hoveredIndex = closestIndex;
 
             if (!this.dragging) return;
 
             const dx = pointer.x - this.prevPointerX;
             this.prevPointerX = pointer.x;
 
-            if (Math.abs(pointer.x - this.pointerDownX) > 10) {
+            if (Math.abs(pointer.x - this.pointerDownX) > 5) {
                 this.wasDragging = true;
             }
 
             const speed = 0.005;
             this.rotationAngle += dx * speed;
-            this.velocity = dx * speed;
-            this.velocity = Phaser.Math.Clamp(this.velocity, -0.1, 0.1);
+            this.velocity = Phaser.Math.Clamp(dx * speed, -0.1, 0.1);
 
             this.updateWheel(true);
         });
 
-        this.input.on('pointerup', (pointer) => {
+        this.input.on('pointerup', () => {
             this.dragging = false;
-            if (!this.wasDragging) {
-                this.handleClick();
-            }
         });
 
         this.updateWheel(true);
@@ -130,9 +126,9 @@ export default class SelectScene extends Phaser.Scene {
     }
 
     updateWheel(instant = false) {
-        // визначаємо центрального персонажа
         let closestIndex = 0;
         let minDiff = Infinity;
+
         this.charSprites.forEach((sprite, i) => {
             const angle = this.rotationAngle + i * this.stepAngle;
             const diff = Math.abs(Math.cos(angle) - 1);
@@ -141,21 +137,24 @@ export default class SelectScene extends Phaser.Scene {
                 closestIndex = i;
             }
         });
+
         this.centerIndex = closestIndex;
 
-        // позиціонування
         this.charSprites.forEach((sprite, i) => {
             const angle = this.rotationAngle + i * this.stepAngle;
+
             const x = this.centerX + Math.sin(angle) * this.radius;
             const y = this.centerY + Math.cos(angle) * this.radius * 0.5;
 
             const depthFactor = (Math.cos(angle) + 1) / 2;
+
             let scale = 0.5 + depthFactor * 0.8;
             let alpha = 0.4 + depthFactor * 0.6;
             const depth = Math.floor(depthFactor * 100);
 
-            // hover ефект
             if (i === this.hoveredIndex) scale *= 1.1;
+
+            sprite.setDepth(depth);
 
             if (instant) {
                 sprite.x = x;
@@ -171,42 +170,36 @@ export default class SelectScene extends Phaser.Scene {
                 });
             }
 
-            sprite.setDepth(depth);
-
-            // locked glow
             if (!this.characters[i].unlocked) {
                 sprite.setTint(0xffffaa);
                 sprite.setBlendMode(Phaser.BlendModes.ADD);
-                if (!sprite.glowTween) {
-                    sprite.glowTween = this.tweens.add({
-                        targets: sprite,
-                        alpha: { from: 0.6, to: 1 },
-                        duration: 800,
-                        yoyo: true,
-                        repeat: -1
-                    });
-                }
             } else {
                 sprite.clearTint();
                 sprite.setBlendMode(Phaser.BlendModes.NORMAL);
             }
 
-            // tilt
             sprite.setRotation(Math.sin(angle) * 0.25);
         });
     }
 
-    handleClick() {
-        const i = this.centerIndex;
-        const sprite = this.charSprites[i];
-        const char = this.characters[i];
+    handleClick(index) {
+        const sprite = this.charSprites[index];
+        const char = this.characters[index];
 
-        if (!char.unlocked) return;
-        if (Math.abs(this.velocity) > 0.01) return; // не клік під час руху
+        if (!char.unlocked) {
+            console.log("LOCKED");
+            return;
+        }
+
+        if (Math.abs(this.velocity) > 0.05) {
+            console.log("STILL MOVING");
+            return;
+        }
+
+        console.log("START GAME:", char.key);
 
         this.sound.play('menu_click');
 
-        // натискання: bounce + flash
         this.tweens.add({
             targets: sprite,
             scale: sprite.scale * 1.2,
@@ -219,9 +212,7 @@ export default class SelectScene extends Phaser.Scene {
         });
 
         sprite.setTint(0xffffcc);
-        this.time.delayedCall(150, () => {
-            sprite.clearTint();
-        });
+        this.time.delayedCall(150, () => sprite.clearTint());
     }
 
     snapToNearest() {
