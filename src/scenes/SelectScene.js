@@ -56,18 +56,14 @@ export default class SelectScene extends Phaser.Scene {
 
         for (let i = 0; i < this.characters.length; i++) {
             const sprite = this.add.image(this.centerX, this.centerY, this.characters[i].key);
-
-            // 🔥 робимо клікабельним
             sprite.setInteractive({ useHandCursor: true });
 
-            sprite.on('pointerdown', () => {
-                this.handleClick(i);
-            });
+            sprite.on('pointerdown', () => this.handleClick(i));
 
             this.charSprites.push(sprite);
         }
 
-        this.input.on('pointerdown', (pointer) => {
+        this.input.on('pointerdown', pointer => {
             this.dragging = true;
             this.prevPointerX = pointer.x;
             this.pointerDownX = pointer.x;
@@ -75,9 +71,9 @@ export default class SelectScene extends Phaser.Scene {
             this.velocity = 0;
         });
 
-        this.input.on('pointermove', (pointer) => {
+        this.input.on('pointermove', pointer => {
             let closestIndex = -1;
-            let minDist = 99999;
+            let minDist = Infinity;
 
             this.charSprites.forEach((sprite, i) => {
                 const dist = Phaser.Math.Distance.Between(pointer.x, pointer.y, sprite.x, sprite.y);
@@ -94,9 +90,7 @@ export default class SelectScene extends Phaser.Scene {
             const dx = pointer.x - this.prevPointerX;
             this.prevPointerX = pointer.x;
 
-            if (Math.abs(pointer.x - this.pointerDownX) > 5) {
-                this.wasDragging = true;
-            }
+            if (Math.abs(pointer.x - this.pointerDownX) > 5) this.wasDragging = true;
 
             const speed = 0.005;
             this.rotationAngle += dx * speed;
@@ -105,9 +99,7 @@ export default class SelectScene extends Phaser.Scene {
             this.updateWheel(true);
         });
 
-        this.input.on('pointerup', () => {
-            this.dragging = false;
-        });
+        this.input.on('pointerup', () => this.dragging = false);
 
         this.updateWheel(true);
     }
@@ -126,20 +118,6 @@ export default class SelectScene extends Phaser.Scene {
     }
 
     updateWheel(instant = false) {
-        let closestIndex = 0;
-        let minDiff = Infinity;
-
-        this.charSprites.forEach((sprite, i) => {
-            const angle = this.rotationAngle + i * this.stepAngle;
-            const diff = Math.abs(Math.cos(angle) - 1);
-            if (diff < minDiff) {
-                minDiff = diff;
-                closestIndex = i;
-            }
-        });
-
-        this.centerIndex = closestIndex;
-
         this.charSprites.forEach((sprite, i) => {
             const angle = this.rotationAngle + i * this.stepAngle;
 
@@ -150,10 +128,10 @@ export default class SelectScene extends Phaser.Scene {
 
             let scale = 0.5 + depthFactor * 0.8;
             let alpha = 0.4 + depthFactor * 0.6;
+
+            if (i === this.hoveredIndex) scale *= 1.05;
+
             const depth = Math.floor(depthFactor * 100);
-
-            if (i === this.hoveredIndex) scale *= 1.1;
-
             sprite.setDepth(depth);
 
             if (instant) {
@@ -165,7 +143,7 @@ export default class SelectScene extends Phaser.Scene {
                 this.tweens.add({
                     targets: sprite,
                     x, y, scale, alpha,
-                    duration: 400,
+                    duration: 300,
                     ease: 'Cubic.easeOut'
                 });
             }
@@ -196,8 +174,13 @@ export default class SelectScene extends Phaser.Scene {
             return;
         }
 
-        console.log("START GAME:", char.key);
+        if (index !== this.centerIndex) {
+            console.log("ROTATING TO CENTER:", index);
+            this.rotateToIndex(index);
+            return;
+        }
 
+        console.log("START GAME:", char.key);
         this.sound.play('menu_click');
 
         this.tweens.add({
@@ -206,13 +189,36 @@ export default class SelectScene extends Phaser.Scene {
             duration: 100,
             yoyo: true,
             ease: 'Quad.easeOut',
-            onComplete: () => {
-                this.scene.start('GameScene', { player: char.key });
-            }
+            onComplete: () => this.scene.start('GameScene', { player: char.key })
         });
 
         sprite.setTint(0xffffcc);
         this.time.delayedCall(150, () => sprite.clearTint());
+    }
+
+    rotateToIndex(targetIndex) {
+        const step = this.stepAngle;
+        const targetAngle = -targetIndex * step;
+
+        this.tweens.add({
+            targets: this,
+            rotationAngle: targetAngle,
+            duration: 400,
+            ease: 'Cubic.easeOut',
+            onUpdate: () => this.updateWheel(true),
+            onComplete: () => {
+                this.centerIndex = targetIndex;
+                const sprite = this.charSprites[targetIndex];
+                this.tweens.add({
+                    targets: sprite,
+                    scale: sprite.scale * 1.1,
+                    alpha: 1,
+                    duration: 150,
+                    yoyo: true,
+                    ease: 'Quad.easeOut'
+                });
+            }
+        });
     }
 
     snapToNearest() {
